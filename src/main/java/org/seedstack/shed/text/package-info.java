@@ -7,6 +7,6 @@
  */
 
 /**
- * Exception with error codes mechanism and utilities.
+ * Text utilities.
  */
-package org.seedstack.utils.exception;
+package org.seedstack.shed.text;

@@ -1,6 +1,6 @@
 # SeedStack utilities
 
-[![Build status](https://travis-ci.org/seedstack/utils.svg?branch=master)](https://travis-ci.org/seedstack/utils) [![Coverage Status](https://coveralls.io/repos/seedstack/utils/badge.svg?branch=master)](https://coveralls.io/r/seedstack/utils?branch=master) [![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.seedstack.utils/utils/badge.svg?style=flat)](https://maven-badges.herokuapp.com/maven-central/org.seedstack.utils/utils)
+[![Build status](https://travis-ci.org/seedstack/shed.svg?branch=master)](https://travis-ci.org/seedstack/shed) [![Coverage Status](https://coveralls.io/repos/seedstack/shed/badge.svg?branch=master)](https://coveralls.io/r/seedstack/shed?branch=master) [![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.seedstack.shed/shed/badge.svg?style=flat)](https://maven-badges.herokuapp.com/maven-central/org.seedstack.shed/shed)
 
 Standalone (no-dependencies) general purpose Java utilities for SeedStack.
 

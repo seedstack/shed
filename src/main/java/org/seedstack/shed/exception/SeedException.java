@@ -5,9 +5,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package org.seedstack.utils.exception;
+package org.seedstack.shed.exception;
 
-import org.seedstack.utils.text.TextUtils;
+import org.seedstack.shed.text.TextUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,6 +22,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static org.seedstack.shed.text.TextUtils.replaceTokens;
 
 /**
  * This is the base class for all technical SEED exceptions.
@@ -425,28 +427,5 @@ public class SeedException extends RuntimeException {
         } catch (Exception e) {
             throw new IllegalArgumentException(exceptionType.getCanonicalName() + " must implement a constructor with an ErrorCode and a Throwable as parameters", e);
         }
-    }
-
-    /**
-     * Replace ${...} placeholders in a string looking up in a replacement map.
-     *
-     * @param text         the text to replace.
-     * @param replacements the map of replacements.
-     * @return the replaced text.
-     */
-    private String replaceTokens(String text, Map<String, Object> replacements) {
-        Pattern pattern = Pattern.compile("\\$\\{(.+?)\\}");
-        Matcher matcher = pattern.matcher(text);
-        StringBuffer buffer = new StringBuffer();
-        while (matcher.find()) {
-            Object replacement = replacements.get(matcher.group(1));
-            matcher.appendReplacement(buffer, "");
-
-            if (replacement != null) {
-                buffer.append(replacement.toString());
-            }
-        }
-        matcher.appendTail(buffer);
-        return buffer.toString();
     }
 }
