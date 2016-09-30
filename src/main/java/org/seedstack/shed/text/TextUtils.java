@@ -12,7 +12,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class TextUtils {
-    public static final String LINE_SEPARATOR = System.getProperty("line.separator", "\n");
+    private static final String LINE_SEPARATOR = "\n";
 
     private TextUtils() {
     }
@@ -64,8 +64,10 @@ public final class TextUtils {
                 sb.append(word);
                 currentPosition += wordLength;
             } else {
-                sb.append(LINE_SEPARATOR);
-                currentPosition = 0;
+                if (currentPosition > 0) {
+                    sb.append(LINE_SEPARATOR);
+                    currentPosition = 0;
+                }
 
                 if (wordLength > width) {
                     int i = 0;

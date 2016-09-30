@@ -20,8 +20,6 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static org.seedstack.shed.text.TextUtils.replaceTokens;
 
@@ -33,7 +31,7 @@ import static org.seedstack.shed.text.TextUtils.replaceTokens;
  */
 public class SeedException extends RuntimeException {
     private static final long serialVersionUID = 1L;
-    private static final ConcurrentMap<String, Properties> ERROR_TEMPLATES = new ConcurrentHashMap<String, Properties>();
+    private static final ConcurrentMap<String, Properties> ERROR_TEMPLATES = new ConcurrentHashMap<>();
     private static final int WRAP_LENGTH = 120;
     private static final String CAUSE_PATTERN = "%d. %s";
     private static final String CODE_PATTERN = "(%s) %s";
@@ -44,7 +42,7 @@ public class SeedException extends RuntimeException {
     private static final String CONSTRUCTOR = "<init>";
 
     private final ErrorCode errorCode;
-    private final Map<String, Object> properties = new HashMap<String, Object>();
+    private final Map<String, Object> properties = new HashMap<>();
     private final AtomicBoolean alreadyComputed = new AtomicBoolean(false);
     private final ThreadLocal<Boolean> alreadyVisited = new ThreadLocal<Boolean>() {
         @Override
@@ -244,7 +242,7 @@ public class SeedException extends RuntimeException {
             return;
         }
 
-        causes = new ArrayList<String>();
+        causes = new ArrayList<>();
 
         Throwable theCause = getCause();
         while (theCause != null) {
