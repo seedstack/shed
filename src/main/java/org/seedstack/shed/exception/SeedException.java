@@ -9,16 +9,13 @@ package org.seedstack.shed.exception;
 
 import org.seedstack.shed.text.TextUtils;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.MissingResourceException;
+import java.util.ResourceBundle;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.seedstack.shed.text.TextUtils.replaceTokens;
@@ -31,12 +28,9 @@ import static org.seedstack.shed.text.TextUtils.replaceTokens;
  */
 public class SeedException extends RuntimeException {
     private static final long serialVersionUID = 1L;
-    private static final ConcurrentMap<String, Properties> ERROR_TEMPLATES = new ConcurrentHashMap<>();
     private static final int WRAP_LENGTH = 120;
     private static final String CAUSE_PATTERN = "%d. %s";
     private static final String CODE_PATTERN = "(%s) %s";
-    private static final String ERROR_TEMPLATE_PATH = "META-INF/errors/";
-    private static final String ERROR_TEMPLATE_EXTENSION = ".properties";
     private static final String JAVA_LANG_THROWABLE = "java.lang.Throwable";
     private static final String PRINT_STACK_TRACE = "printStackTrace";
     private static final String CONSTRUCTOR = "<init>";
@@ -250,19 +244,19 @@ public class SeedException extends RuntimeException {
                 SeedException seedCause = (SeedException) theCause;
 
                 // Find the fix at lowest depth
-                String fixTemplate = seedCause.getErrorTemplate("fix");
+                String fixTemplate = seedCause.getInfo("fix");
                 if (fixTemplate != null) {
                     fix = replaceTokens(fixTemplate, seedCause.getProperties());
                 }
 
                 // Also get the url
-                String urlTemplate = seedCause.getErrorTemplate("url");
+                String urlTemplate = seedCause.getInfo("url");
                 if (urlTemplate != null) {
                     url = replaceTokens(urlTemplate, seedCause.getProperties());
                 }
 
                 // Collects all cause messages from highest to lowest level
-                String seedCauseErrorTemplate = seedCause.getErrorTemplate("message");
+                String seedCauseErrorTemplate = seedCause.getInfo("message");
                 if (seedCauseErrorTemplate != null) {
                     causes.add(String.format(CODE_PATTERN, formatErrorClass(seedCause.getErrorCode()), replaceTokens(seedCauseErrorTemplate, seedCause.getProperties())));
                 } else {
@@ -276,24 +270,32 @@ public class SeedException extends RuntimeException {
         }
 
         if (message == null) {
-            String messageTemplate = getErrorTemplate("message");
+            String messageTemplate = getInfo("message");
             if (messageTemplate != null) {
                 message = replaceTokens(messageTemplate, getProperties());
             }
         }
 
         if (fix == null) {
-            String fixTemplate = getErrorTemplate("fix");
+            String fixTemplate = getInfo("fix");
             if (fixTemplate != null) {
                 fix = replaceTokens(fixTemplate, getProperties());
             }
         }
 
         if (url == null) {
-            String urlTemplate = getErrorTemplate("url");
+            String urlTemplate = getInfo("url");
             if (urlTemplate != null) {
                 url = replaceTokens(urlTemplate, getProperties());
             }
+        }
+    }
+
+    private String getInfo(String key) {
+        try {
+            return ResourceBundle.getBundle(errorCode.getClass().getName()).getString(key);
+        } catch (MissingResourceException e) {
+            return null;
         }
     }
 
@@ -306,37 +308,6 @@ public class SeedException extends RuntimeException {
             }
         }
         return sb;
-    }
-
-    private String getErrorTemplate(String templateType) {
-        Properties templates = ERROR_TEMPLATES.get(errorCode.getClass().getCanonicalName());
-
-        if (templates == null) {
-            templates = new Properties();
-            ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-
-            if (classLoader == null) {
-                classLoader = errorCode.getClass().getClassLoader();
-            }
-
-            if (classLoader != null) {
-                String catalogPath = ERROR_TEMPLATE_PATH + errorCode.getClass().getCanonicalName() + ERROR_TEMPLATE_EXTENSION;
-                InputStream errorTemplatesStream = classLoader.getResourceAsStream(catalogPath);
-
-                if (errorTemplatesStream != null) {
-                    try {
-                        templates.load(errorTemplatesStream);
-                        errorTemplatesStream.close();
-                    } catch (IOException e) {
-                        // cannot do anything about it
-                    }
-                }
-            }
-
-            ERROR_TEMPLATES.putIfAbsent(errorCode.getClass().getCanonicalName(), templates);
-        }
-
-        return templates.getProperty(errorCode + "." + templateType);
     }
 
     /**

@@ -35,7 +35,7 @@ public class SeedExceptionTest {
     public void testCreateNewTotoException1() {
         throw SeedException.createNew(TotoException.class, TotoErrorCode.CARAMBAR_MODE)
                 .put("key1", "value1")
-                .<TotoException>put("key2", "value2");
+                .put("key2", "value2");
     }
 
     @Test(expected = SeedException.class)
@@ -96,5 +96,16 @@ public class SeedExceptionTest {
         assertThat(text).contains("Caused by: java.lang.RuntimeException: yop");
         assertThat(text).contains("Caused by: org.seedstack.shed.exception.SeedException: (TOTO) Carambar mode");
         assertThat(text).contains("org.seedstack.shed.exception.SeedException: (TOTO) Joke mode");
+    }
+
+    @Test
+    public void infoShouldBeLoaded() throws Exception {
+        SeedException seedException = SeedException.createNew(TotoException.class, TotoErrorCode.CARAMBAR_MODE)
+                .put("who", "World")
+                .put("tld", "com");
+        String text = seedException.toString();
+        assertThat(text).contains("Hello World!");
+        assertThat(text).contains("Some fix");
+        assertThat(text).contains("http://some.url.com");
     }
 }

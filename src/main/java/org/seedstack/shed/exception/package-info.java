@@ -7,6 +7,6 @@
  */
 
 /**
- * Exception with error codes mechanism and utilities.
+ * SeedException with error codes mechanism and utilities.
  */
 package org.seedstack.shed.exception;

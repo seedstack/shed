@@ -26,7 +26,38 @@
         <bintray.package>shed</bintray.package>
     </properties>
 
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>license-maven-plugin</artifactId>
+                    <configuration>
+                        <includedLicenses>
+                            <includedLicense>Apache 2</includedLicense>
+
+                            <!-- Some licenses are ignored because they are alternatives to acceptable licenses and the plugin doesn't handle alternate licenses -->
+                            <includedLicense>IGNORED_LICENSE</includedLicense>
+                        </includedLicenses>
+                        <licenseMerges>
+                            <licenseMerge>Apache 2|The Apache Software License, Version 2.0</licenseMerge>
+                        </licenseMerges>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+
     <dependencies>
+        <!-- Optional dependencies -->
+        <dependency>
+            <groupId>org.javatuples</groupId>
+            <artifactId>javatuples</artifactId>
+            <version>1.2</version>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- Test dependencies -->
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
