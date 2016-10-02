@@ -293,7 +293,7 @@ public class SeedException extends RuntimeException {
 
     private String getInfo(String key) {
         try {
-            return ResourceBundle.getBundle(errorCode.getClass().getName()).getString(key);
+            return ResourceBundle.getBundle(errorCode.getClass().getName()).getString(errorCode.toString() + "." + key);
         } catch (MissingResourceException e) {
             return null;
         }
