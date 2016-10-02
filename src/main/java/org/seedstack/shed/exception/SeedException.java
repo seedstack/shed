@@ -244,19 +244,19 @@ public class SeedException extends RuntimeException {
                 SeedException seedCause = (SeedException) theCause;
 
                 // Find the fix at lowest depth
-                String fixTemplate = seedCause.getInfo("fix");
+                String fixTemplate = seedCause.getTemplate("fix");
                 if (fixTemplate != null) {
                     fix = replaceTokens(fixTemplate, seedCause.getProperties());
                 }
 
                 // Also get the url
-                String urlTemplate = seedCause.getInfo("url");
+                String urlTemplate = seedCause.getTemplate("url");
                 if (urlTemplate != null) {
                     url = replaceTokens(urlTemplate, seedCause.getProperties());
                 }
 
                 // Collects all cause messages from highest to lowest level
-                String seedCauseErrorTemplate = seedCause.getInfo(null);
+                String seedCauseErrorTemplate = seedCause.getTemplate(null);
                 if (seedCauseErrorTemplate != null) {
                     causes.add(String.format(CODE_PATTERN, formatErrorClass(seedCause.getErrorCode()), replaceTokens(seedCauseErrorTemplate, seedCause.getProperties())));
                 } else {
@@ -270,30 +270,32 @@ public class SeedException extends RuntimeException {
         }
 
         if (message == null) {
-            String messageTemplate = getInfo(null);
+            String messageTemplate = getTemplate(null);
             if (messageTemplate != null) {
                 message = replaceTokens(messageTemplate, getProperties());
             }
         }
 
         if (fix == null) {
-            String fixTemplate = getInfo("fix");
+            String fixTemplate = getTemplate("fix");
             if (fixTemplate != null) {
                 fix = replaceTokens(fixTemplate, getProperties());
             }
         }
 
         if (url == null) {
-            String urlTemplate = getInfo("url");
+            String urlTemplate = getTemplate("url");
             if (urlTemplate != null) {
                 url = replaceTokens(urlTemplate, getProperties());
             }
         }
     }
 
-    private String getInfo(String key) {
+    private String getTemplate(String key) {
         try {
-            return ResourceBundle.getBundle(errorCode.getClass().getName()).getString(key == null ? errorCode.toString() : errorCode.toString() + "." + key);
+            return ResourceBundle
+                    .getBundle(errorCode.getClass().getName())
+                    .getString(key == null ? errorCode.toString() : errorCode.toString() + "." + key);
         } catch (MissingResourceException e) {
             return null;
         }
