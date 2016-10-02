@@ -256,7 +256,7 @@ public class SeedException extends RuntimeException {
                 }
 
                 // Collects all cause messages from highest to lowest level
-                String seedCauseErrorTemplate = seedCause.getInfo("message");
+                String seedCauseErrorTemplate = seedCause.getInfo(null);
                 if (seedCauseErrorTemplate != null) {
                     causes.add(String.format(CODE_PATTERN, formatErrorClass(seedCause.getErrorCode()), replaceTokens(seedCauseErrorTemplate, seedCause.getProperties())));
                 } else {
@@ -270,7 +270,7 @@ public class SeedException extends RuntimeException {
         }
 
         if (message == null) {
-            String messageTemplate = getInfo("message");
+            String messageTemplate = getInfo(null);
             if (messageTemplate != null) {
                 message = replaceTokens(messageTemplate, getProperties());
             }
@@ -293,7 +293,7 @@ public class SeedException extends RuntimeException {
 
     private String getInfo(String key) {
         try {
-            return ResourceBundle.getBundle(errorCode.getClass().getName()).getString(errorCode.toString() + "." + key);
+            return ResourceBundle.getBundle(errorCode.getClass().getName()).getString(key == null ? errorCode.toString() : errorCode.toString() + "." + key);
         } catch (MissingResourceException e) {
             return null;
         }
