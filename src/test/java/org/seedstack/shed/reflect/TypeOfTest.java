@@ -12,7 +12,6 @@ package org.seedstack.shed.reflect;
 
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
-import org.seedstack.shed.exception.SeedException;
 
 import java.io.StringWriter;
 import java.util.List;
@@ -41,7 +40,6 @@ public class TypeOfTest {
 
     /**
      * Test method for {@link TypeOf#getType()}.
-     * Test a {@link SeedException} if no generic parameter.
      */
     @SuppressWarnings("rawtypes")
     @Test
