@@ -49,14 +49,6 @@
     </build>
 
     <dependencies>
-        <!-- Optional dependencies -->
-        <dependency>
-            <groupId>org.javatuples</groupId>
-            <artifactId>javatuples</artifactId>
-            <version>1.2</version>
-            <optional>true</optional>
-        </dependency>
-
         <!-- Test dependencies -->
         <dependency>
             <groupId>junit</groupId>
