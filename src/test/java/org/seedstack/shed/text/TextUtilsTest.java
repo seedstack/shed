@@ -14,7 +14,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class TextUtilsTest {
     private String longString = "Nec vox accusatoris ulla licet subditicii in his malorum quaerebatur acervis ut saltem specie tenus crimina praescriptis legum committerentur, quod aliquotiens fecere principes saevi: sed quicquid Caesaris implacabilitati sedisset, id velut fas iusque perpensum confestim urgebatur impleri.";
-    private String longWord = "abcdefghijklmnopqrstuvwxyz----abcdefghijklmnopqrstuvwxyz----abcdefghijklmnopqrstuvwxyz----";
 
     @Test
     public void testSplitWords() throws Exception {
@@ -31,12 +30,35 @@ public class TextUtilsTest {
     }
 
     @Test
+    public void testWrapPreserveShortStrings() throws Exception {
+        String stringWithNewLine = "Nec vox accusatoris\n";
+        assertThat(TextUtils.wrap(stringWithNewLine, 80)).isEqualTo(stringWithNewLine);
+        String stringWithoutNewLine = "Nec vox accusatoris";
+        assertThat(TextUtils.wrap(stringWithoutNewLine, 80)).isEqualTo(stringWithoutNewLine);
+    }
+
+    @Test
     public void testLongWordWrap() throws Exception {
+        String longWord = "abcdefghijklmnopqrstuvwxyz----abcdefghijklmnopqrstuvwxyz----abcdefghijklmnopqrstuvwxyz----";
         String wrapped = TextUtils.wrap(longWord, 80);
         for (String line : wrapped.split("\n")) {
             assertThat(line.length()).isLessThanOrEqualTo(80);
         }
         assertThat(wrapped).contains("—");
-        System.out.println(wrapped);
+    }
+
+    @Test
+    public void testLeftPad() throws Exception {
+        String multiLineString = "abcdefghijklmnopqrstuvwxyz\nabcdefghijklmnopqrstuvwxyz\nabcdefghijklmnopqrstuvwxyz";
+        String padded = TextUtils.leftPad(multiLineString, "***", 1);
+        boolean first = true;
+        for (String s : padded.split("\\n")) {
+            if (first) {
+                assertThat(s).isEqualTo("abcdefghijklmnopqrstuvwxyz");
+                first = false;
+            } else {
+                assertThat(s).isEqualTo("***abcdefghijklmnopqrstuvwxyz");
+            }
+        }
     }
 }

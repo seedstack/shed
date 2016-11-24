@@ -13,6 +13,7 @@ import java.util.regex.Pattern;
 
 public final class TextUtils {
     private static final String LINE_SEPARATOR = "\n";
+    private static final Pattern LINE_START_PATTERN = Pattern.compile("^.*", Pattern.MULTILINE);
 
     private TextUtils() {
     }
@@ -53,6 +54,7 @@ public final class TextUtils {
         int currentPosition = 0;
 
         for (String word : splitWords(text)) {
+            String lastWord;
             int wordLength = word.length();
 
             if (currentPosition + wordLength <= width) {
@@ -61,7 +63,7 @@ public final class TextUtils {
                     currentPosition += 1;
                 }
 
-                sb.append(word);
+                sb.append(lastWord = word);
                 currentPosition += wordLength;
             } else {
                 if (currentPosition > 0) {
@@ -76,12 +78,17 @@ public final class TextUtils {
                         i += width - continuationLength;
                     }
                     String endOfWord = word.substring(i);
-                    sb.append(endOfWord);
+                    sb.append(lastWord = endOfWord);
                     currentPosition = endOfWord.length();
                 } else {
-                    sb.append(word);
+                    sb.append(lastWord = word);
                     currentPosition += wordLength;
                 }
+            }
+
+            int lastNewLine = lastWord.lastIndexOf("\n");
+            if (lastNewLine != -1) {
+                currentPosition = lastWord.length() - lastNewLine;
             }
         }
 
@@ -109,5 +116,20 @@ public final class TextUtils {
         }
         matcher.appendTail(buffer);
         return buffer.toString();
+    }
+
+    public static String leftPad(String text, String padding, int linesToIgnore) {
+        StringBuilder result = new StringBuilder();
+        Matcher matcher = LINE_START_PATTERN.matcher(text);
+
+        while (matcher.find()) {
+            if (linesToIgnore > 0) {
+                linesToIgnore--;
+            } else {
+                result.append(padding);
+            }
+            result.append(matcher.group()).append("\n");
+        }
+        return result.toString();
     }
 }
