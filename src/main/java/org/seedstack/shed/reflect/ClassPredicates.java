@@ -9,21 +9,47 @@ package org.seedstack.shed.reflect;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
+import java.lang.reflect.Executable;
 import java.lang.reflect.Modifier;
-import java.util.Collection;
+import java.util.Arrays;
 import java.util.function.Predicate;
 
-public class ClassPredicates {
-    public static <T extends AnnotatedElement> Predicate<T> elementAnnotatedWith(Class<? extends Annotation> annotationClass) {
-        return candidate -> candidate != null && candidate.isAnnotationPresent(annotationClass);
+public final class ClassPredicates {
+    private ClassPredicates() {
+        // no instantiation allowed
     }
 
     /**
-     * Checks if the candidate isn't equal to the given class.
+     * Checks if the candidate is annotated by the specified annotation or meta-annotation.
      *
-     * @param reference the class to check.
+     * @param annotationClass        the annotation to check for.
+     * @param includeMetaAnnotations if true, meta-annotations are included in the search.
+     * @return the predicate.
+     */
+    public static <T extends AnnotatedElement> Predicate<T> elementAnnotatedWith(Class<? extends Annotation> annotationClass, boolean includeMetaAnnotations) {
+        return candidate -> {
+            Annotations.OnClass on = Annotations.on(candidate);
+            if (includeMetaAnnotations) {
+                on.includingMetaAnnotations();
+            }
+            return candidate != null && on.find(annotationClass).isPresent();
+        };
+    }
+
+    /**
+     * Checks if the candidate is annotated by the specified annotation. This is equivalent to elementAnnotatedWith(annotationClass, false).
+     *
+     * @param annotationClass the annotation to check for.
+     * @return the predicate.
+     */
+    public static <T extends AnnotatedElement> Predicate<T> elementAnnotatedWith(Class<? extends Annotation> annotationClass) {
+        return elementAnnotatedWith(annotationClass, false);
+    }
+
+    /**
+     * Checks if the candidate is the specified class.
+     *
+     * @param reference the class to check for.
      * @return the predicate.
      */
     public static Predicate<Class<?>> classIs(final Class<?> reference) {
@@ -31,23 +57,31 @@ public class ClassPredicates {
     }
 
     /**
-     * Checks if the candidate equals to the given class.
+     * Check is the candidate is implementing or extending the specified class.
      *
-     * @param reference the class to check
-     * @return the predicate.
-     */
-    public static Predicate<Class<?>> classIsNot(final Class<?> reference) {
-        return candidate -> candidate != null && !candidate.equals(reference);
-    }
-
-    /**
-     * Check is the candidate is implementing or extending the specified ancestor.
-     *
-     * @param ancestor the ancestor to look for.
+     * @param ancestor the extended or implemented class to check for.
      * @return the predicate.
      */
     public static Predicate<Class<?>> classIsAssignableFrom(Class<?> ancestor) {
         return candidate -> candidate != null && candidate != ancestor && ancestor.isAssignableFrom(candidate);
+    }
+
+    /**
+     * Checks if the candidate is an interface.
+     *
+     * @return the predicate.
+     */
+    public static Predicate<Class<?>> classIsInterface() {
+        return candidate -> candidate != null && candidate.isInterface();
+    }
+
+    /**
+     * Checks if the class is an annotation.
+     *
+     * @return the predicate.
+     */
+    public static Predicate<Class<?>> classIsAnnotation() {
+        return candidate -> candidate != null && candidate.isAnnotation();
     }
 
     /**
@@ -61,195 +95,93 @@ public class ClassPredicates {
     }
 
     /**
-     * Check if the specified class has at least a public constructor.
+     * Check if the candidate has the specified modifier.
+     *
+     * @param modifier the modifier to check for.
+     * @return the predicate.
+     */
+    public static <T extends Executable> Predicate<T> executableModifierIs(final int modifier) {
+        return candidate -> (candidate.getModifiers() & modifier) != 0;
+    }
+
+    /**
+     * Checks if the candidate implements at least one interface..
      *
      * @return the predicate.
      */
-    public static Predicate<Class<?>> classConstructorIsPublic() {
-        return candidate -> {
-            for (Constructor<?> constructor : candidate.getDeclaredConstructors()) {
-                if (Modifier.isPublic(constructor.getModifiers())) {
-                    return true;
-                }
-            }
-            return false;
-        };
-    }
-
-    /**
-     * @param interfaceClass the requested interface
-     * @return a specification which check if one candidate ancestor implements the given interface
-     */
-    public static Predicate<Class<?>> ancestorImplements(final Class<?> interfaceClass) {
-        return candidate -> {
-            if (candidate == null) {
-                return false;
-            }
-
-            boolean result = false;
-            Class<?>[] allInterfacesAndClasses = getAllInterfacesAndClasses(candidate);
-            for (Class<?> clazz : allInterfacesAndClasses) {
-                if (!clazz.isInterface()) {
-                    for (Class<?> i : clazz.getInterfaces()) {
-                        if (i.equals(interfaceClass)) {
-                            result = true;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            return result;
-        };
-    }
-
-    /**
-     * Checks if the candidate has one field annotated or meta annotated by the given annotation.
-     *
-     * @param annotationClass the requested annotation
-     * @return the predicate.
-     */
-    public static Predicate<Class<?>> fieldDeepAnnotatedWith(final Class<? extends Annotation> annotationClass) {
-        return candidate -> {
-            if (candidate != null) {
-                do {
-                    for (Field field : candidate.getDeclaredFields()) {
-                        if (field.isAnnotationPresent(annotationClass)) {
-                            return true;
-                        }
-                    }
-                    candidate = candidate.getSuperclass();
-                } while (candidate != null && candidate != Object.class);
-            }
-
-            return false;
-        };
-    }
-
-    /**
-     * Checks if the candidate inherits from the given class.
-     *
-     * @param klass the requested class
-     * @return the predicate.
-     */
-    public static Predicate<Class<?>> classInherits(final Class<?> klass) {
-        return candidate -> candidate != null && klass.isAssignableFrom(candidate);
-    }
-
-    public static Predicate<Class<?>> classMethodsAnnotatedWith(final Class<? extends Annotation> annotationClass) {
-        return new ClassMethodsAnnotatedWith(annotationClass);
-    }
-
-    /**
-     * Checks if the candidate or an ancestor is annotated or meta annotated by the given annotation.
-     *
-     * @param anoKlass the requested annotation
-     * @return the predicate.
-     */
-    public static Predicate<Class<?>> ancestorMetaAnnotatedWith(final Class<? extends Annotation> anoKlass) {
-        return candidate -> {
-
-            if (candidate == null) {
-                return false;
-            }
-
-            boolean result = false;
-
-            Class<?>[] allInterfacesAndClasses = getAllInterfacesAndClasses(candidate);
-
-            for (Class<?> clazz : allInterfacesAndClasses) {
-                boolean satisfiedBy = classMetaAnnotatedWith(anoKlass).test(clazz);
-                if (satisfiedBy) {
-                    result = true;
-                    break;
-                }
-            }
-
-            return result;
-        };
-    }
-
-    /**
-     * Checks if the candidate is annotated or meta annotated by the given annotation.
-     *
-     * @param klass the requested annotation
-     * @return the predicate.
-     */
-    public static Predicate<Class<?>> classMetaAnnotatedWith(final Class<? extends Annotation> klass) {
-        return candidate -> candidate != null && hasAnnotationDeep(candidate, klass);
-
-    }
-
-    /**
-     * Checks if the given class is annotated or meta annotated with the given annotation.
-     *
-     * @param aClass          the class to check
-     * @param annotationClass the requested annotation
-     * @return true if the class if annotated or meta annotated, false otherwise
-     */
-    public static boolean hasAnnotationDeep(Class<?> aClass, Class<? extends Annotation> annotationClass) {
-        if (aClass.equals(annotationClass)) {
-            return true;
-        }
-
-        for (Annotation anno : aClass.getAnnotations()) {
-            Class<? extends Annotation> annoClass = anno.annotationType();
-            if (!annoClass.getPackage().getName().startsWith("java.lang")
-                    && hasAnnotationDeep(annoClass, annotationClass)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Checks if the candidate is an interface.
-     *
-     * @return the predicate.
-     */
-    public static Predicate<Class<?>> classIsInterface() {
-        return candidate -> candidate != null && candidate.isInterface();
-    }
-
-    /**
-     * Checks if the candidate has interface.
-     *
-     * @return the predicate.
-     */
-    public static Predicate<Class<?>> classHasSuperInterfaces() {
+    public static Predicate<Class<?>> atLeastOneInterfaceImplemented() {
         return candidate -> candidate != null && candidate.getInterfaces().length > 0;
     }
 
     /**
-     * Checks if the class is an annotation
+     * Check if the specified class has at least a public constructor.
      *
      * @return the predicate.
      */
-    public static Predicate<Class<?>> classIsAnnotation() {
-        return candidate -> candidate != null && candidate.isAnnotation();
+    public static Predicate<Class<?>> atLeastOneConstructorIsPublic() {
+        return candidate -> candidate != null && Classes.from(candidate)
+                .constructors()
+                .anyMatch(executableModifierIs(Modifier.PUBLIC));
     }
 
     /**
-     * Checks if the class is abstract.
+     * Checks if the candidate or one of its superclasses has at least one field annotated or meta-annotated by the given annotation.
      *
+     * @param annotationClass        the requested annotation
+     * @param includeMetaAnnotations if true, meta-annotations are included in the search.
      * @return the predicate.
      */
-    public static Predicate<Class<?>> classIsAbstract() {
-        return candidate -> candidate != null && Modifier.isAbstract(candidate.getModifiers());
+    public static Predicate<Class<?>> atLeastOneFieldAnnotatedWith(final Class<? extends Annotation> annotationClass, boolean includeMetaAnnotations) {
+        return candidate -> candidate != null && Classes.from(candidate)
+                .traversingSuperclasses()
+                .fields()
+                .anyMatch(elementAnnotatedWith(annotationClass, includeMetaAnnotations));
     }
 
     /**
-     * Checks if at least one method of the class is annotated with the annotation class.
+     * Checks if the candidate or one of its superclasses or interfaces has at least one method annotated or meta-annotated
+     * by the given annotation.
      *
-     * @param annotationClass the requested annotation
+     * @param annotationClass        the requested annotation
+     * @param includeMetaAnnotations if true, meta-annotations are included in the search.
      * @return the predicate.
      */
-    public static Predicate<Class<?>> atLeastOneMethodAnnotatedWith(final Class<? extends Annotation> annotationClass) {
-        return candidate -> !Classes.from(candidate)
+    public static Predicate<Class<?>> atLeastOneMethodAnnotatedWith(final Class<? extends Annotation> annotationClass, boolean includeMetaAnnotations) {
+        return candidate -> Classes.from(candidate)
                 .traversingInterfaces()
                 .traversingSuperclasses()
-                .methods(elementAnnotatedWith(annotationClass)).isEmpty();
+                .methods()
+                .anyMatch(elementAnnotatedWith(annotationClass, includeMetaAnnotations));
 
+    }
+
+    /**
+     * Checks if the candidate has one of its superclasses implementing the specified interface.
+     *
+     * @param interfaceClass the interface to check for.
+     * @return the predicate.
+     */
+    public static Predicate<Class<?>> ancestorImplements(final Class<?> interfaceClass) {
+        return candidate -> candidate != null && candidate.getSuperclass() != null && Classes.from(candidate.getSuperclass())
+                .traversingSuperclasses()
+                .classes()
+                .map(Class::getInterfaces)
+                .flatMap(Arrays::stream)
+                .anyMatch(Predicate.isEqual(interfaceClass));
+    }
+
+    /**
+     * Checks if the candidate has one of its superclasses or interfaces annotated with the specified annotation.
+     *
+     * @param annotationClass        the requested annotation
+     * @param includeMetaAnnotations if true, meta-annotations are included in the search.
+     * @return the predicate.
+     */
+    public static Predicate<Class<?>> ancestorAnnotatedWith(final Class<? extends Annotation> annotationClass, boolean includeMetaAnnotations) {
+        return candidate -> candidate != null && candidate.getSuperclass() != null && Classes.from(candidate.getSuperclass())
+                .traversingSuperclasses()
+                .traversingInterfaces()
+                .classes()
+                .anyMatch(elementAnnotatedWith(annotationClass, includeMetaAnnotations));
     }
 }

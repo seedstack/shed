@@ -23,24 +23,22 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * exception: detailed message, fix advice and online URL. Extra attributes can be added to the exception and used in
  * message templates.
  */
-public abstract class VerboseException extends RuntimeException {
+public class VerboseException extends RuntimeException {
     private static final long serialVersionUID = 1L;
     private static final int WRAP_LENGTH = 120;
-    private static final String CAUSE_PATTERN = "%d. %s";
-    private static final String CODE_PATTERN = "(%s) %s";
+    private static final String MULTIPLE_CAUSES_PATTERN = "%d. %s";
+    private static final String CAUSE_PATTERN = "%s @(%s:%d)";
+    private static final String ERROR_CODE_PATTERN = "[%s] %s";
+    private static final String SEED_EXCEPTION = VerboseException.class.getName();
     private static final String JAVA_LANG_THROWABLE = "java.lang.Throwable";
     private static final String PRINT_STACK_TRACE = "printStackTrace";
     private static final String CONSTRUCTOR = "<init>";
+    private static final String COM_GOOGLE_INJECT_INTERNAL_ERRORS = "com.google.inject.internal.Errors";
 
     private final ErrorCode errorCode;
     private final Map<String, Object> properties = new HashMap<>();
     private final AtomicBoolean alreadyComputed = new AtomicBoolean(false);
-    private final ThreadLocal<Boolean> alreadyVisited = new ThreadLocal<Boolean>() {
-        @Override
-        protected Boolean initialValue() {
-            return false;
-        }
-    };
+    private final ThreadLocal<Boolean> alreadyVisited = ThreadLocal.withInitial(() -> false);
 
     private List<String> causes;
     private String message;
@@ -124,8 +122,9 @@ public abstract class VerboseException extends RuntimeException {
     public String toString() {
         int location = getLocation();
 
-        if (location == 1) {
-            // if called from throwable constructor we return the simple message to avoid messing stack trace
+        if (location == 1 || location == 3) {
+            // if called from throwable constructor or from a verbose Guice exception
+            // we return the simple message to avoid messing the stack trace
             return getMessage();
         }
 
@@ -155,44 +154,57 @@ public abstract class VerboseException extends RuntimeException {
         StringBuilder s = new StringBuilder(16384);
 
         s.append(super.toString());
-        s.append("\n");
 
         String seedMessage = getDescription();
         if (seedMessage != null) {
-            s.append("\nDescription\n-----------\n");
-            s.append(wrapLine(seedMessage));
+            ensureBlankLine(s);
+            s.append("Description\n-----------\n");
+            s.append(TextUtils.wrap(seedMessage, WRAP_LENGTH));
         }
 
         int i = causes.size();
         if (i == 1) {
-            s.append("\nCause\n-----\n");
-            s.append(wrapLine(causes.get(0)));
+            ensureBlankLine(s);
+            s.append("Cause\n-----\n");
+            s.append(TextUtils.wrap(causes.get(0), WRAP_LENGTH));
         } else if (i > 1) {
-            s.append("\nCauses\n------\n");
-
+            ensureBlankLine(s);
+            s.append("Causes\n------\n");
             int count = 1;
             for (String seedCause : causes) {
-                s.append(wrapLine(String.format(CAUSE_PATTERN, count, seedCause)));
+                ensureBlankLine(s);
+                s.append(String.format(MULTIPLE_CAUSES_PATTERN, count, TextUtils.leftPad(TextUtils.wrap(seedCause, WRAP_LENGTH), "   ", 1)));
                 count++;
             }
         }
 
         if (fix != null) {
-            s.append("\nFix\n---\n");
-            s.append(wrapLine(fix));
+            ensureBlankLine(s);
+            s.append("Fix\n---\n");
+            s.append(TextUtils.wrap(fix, WRAP_LENGTH));
         }
 
         if (url != null) {
-            s.append("\nOnline information\n------------------\n");
-            s.append(url).append("\n");
+            ensureBlankLine(s);
+            s.append("Online information\n------------------\n");
+            s.append(url);
         }
 
         if (location == 2) {
             // this header is displayed only if called from printStackTrace()
-            s.append("\nStacktrace\n----------");
+            ensureBlankLine(s);
+            s.append("Stacktrace\n----------");
         }
 
         return s.toString();
+    }
+
+    private void ensureBlankLine(StringBuilder s) {
+        if (s.charAt(s.length() - 1) != '\n') {
+            s.append("\n\n");
+        } else if (s.charAt(s.length() - 2) != '\n') {
+            s.append("\n");
+        }
     }
 
     /**
@@ -248,6 +260,7 @@ public abstract class VerboseException extends RuntimeException {
 
         Throwable theCause = getCause();
         while (theCause != null) {
+            String causeMessage;
             if (theCause instanceof VerboseException) {
                 VerboseException seedCause = (VerboseException) theCause;
 
@@ -266,12 +279,16 @@ public abstract class VerboseException extends RuntimeException {
                 // Collects all cause messages from highest to lowest level
                 String seedCauseErrorTemplate = seedCause.getTemplate(null);
                 if (seedCauseErrorTemplate != null) {
-                    causes.add(String.format(CODE_PATTERN, formatErrorClass(seedCause.getErrorCode()), TextUtils.replaceTokens(seedCauseErrorTemplate, seedCause.getProperties())));
+                    causeMessage = String.format(ERROR_CODE_PATTERN, formatErrorClass(seedCause.getErrorCode()), TextUtils.replaceTokens(seedCauseErrorTemplate, seedCause.getProperties()));
                 } else {
-                    causes.add(theCause.getMessage());
+                    causeMessage = seedCause.getMessage();
                 }
             } else {
-                causes.add(theCause.toString());
+                causeMessage = theCause.toString();
+            }
+            StackTraceElement stackTraceElement = findRelevantStackTraceElement(theCause);
+            if (stackTraceElement != null) {
+                causes.add(String.format(CAUSE_PATTERN, causeMessage, stackTraceElement.getFileName(), stackTraceElement.getLineNumber()));
             }
 
             theCause = theCause.getCause();
@@ -299,6 +316,15 @@ public abstract class VerboseException extends RuntimeException {
         }
     }
 
+    private StackTraceElement findRelevantStackTraceElement(Throwable t) {
+        for (StackTraceElement stackTraceElement : t.getStackTrace()) {
+            if (!SEED_EXCEPTION.equals(stackTraceElement.getClassName())) {
+                return stackTraceElement;
+            }
+        }
+        return null;
+    }
+
     private String getTemplate(String key) {
         try {
             return ResourceBundle
@@ -307,17 +333,6 @@ public abstract class VerboseException extends RuntimeException {
         } catch (MissingResourceException e) {
             return null;
         }
-    }
-
-    private StringBuffer wrapLine(String seedMessage) {
-        StringBuffer sb = new StringBuffer();
-        if (seedMessage != null && !"".equals(seedMessage)) {
-            String[] split = seedMessage.split("\n");
-            for (String s1 : split) {
-                sb.append(TextUtils.wrap(s1, WRAP_LENGTH)).append('\n');
-            }
-        }
-        return sb;
     }
 
     private int getLocation() {
@@ -330,6 +345,10 @@ public abstract class VerboseException extends RuntimeException {
             if (JAVA_LANG_THROWABLE.equals(stackTraceElement.getClassName()) && PRINT_STACK_TRACE.equals(stackTraceElement.getMethodName())) {
                 return 2;
             }
+            // In a Guice verbose exception
+            if (COM_GOOGLE_INJECT_INTERNAL_ERRORS.equals(stackTraceElement.getClassName())) {
+                return 3;
+            }
         }
         // Elsewhere
         return 0;
@@ -338,7 +357,7 @@ public abstract class VerboseException extends RuntimeException {
     private static String formatErrorCode(ErrorCode errorCode) {
         String name = errorCode.toString().toLowerCase().replace("_", " ");
         return String.format(
-                CODE_PATTERN,
+                ERROR_CODE_PATTERN,
                 formatErrorClass(errorCode),
                 name.substring(0, 1).toUpperCase() + name.substring(1)
         );
@@ -385,9 +404,7 @@ public abstract class VerboseException extends RuntimeException {
         }
     }
 
-    /**
-     * Marker interface for error codes used in {@link VerboseException} classes.
-     */
     public interface ErrorCode {
+
     }
 }

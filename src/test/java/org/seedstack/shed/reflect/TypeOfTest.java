@@ -25,7 +25,7 @@ public class TypeOfTest {
      * Test method for {@link TypeOf#getType()}.
      */
     @Test
-    public void testResult() {
+    public void result() {
         TypeOf<List<String>> typeOf = new TypeOf<List<String>>() {
         };
         Assertions.assertThat(typeOf.getType().toString()).isEqualTo("java.util.List<java.lang.String>");
@@ -43,7 +43,7 @@ public class TypeOfTest {
      */
     @SuppressWarnings("rawtypes")
     @Test
-    public void testGetTypeWithoutParameterized() {
+    public void getTypeWithoutParameterized() {
         StringWriter stringWriter = new StringWriter();
         try {
             new TypeOf() {

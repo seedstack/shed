@@ -32,14 +32,14 @@ public class VerboseExceptionTest {
     }
 
     @Test(expected = TotoException.class)
-    public void testCreateNewTotoException1() {
+    public void createNewTotoException1() {
         throw VerboseException.createNew(TotoException.class, TotoErrorCode.CARAMBAR_MODE)
                 .put("key1", "value1")
                 .put("key2", "value2");
     }
 
     @Test(expected = TotoException.class)
-    public void wrap_Should_Work_Fine_WIth_Descendant() {
+    public void wrap_should_work_fine_with_descendant() {
         try {
             throw new NullPointerException();
         } catch (Exception exception) {
@@ -49,7 +49,7 @@ public class VerboseExceptionTest {
     }
 
     @Test(expected = VerboseException.class)
-    public void wrap_Should_Work_Fine_WIth_Change_Of_ErrorCode() {
+    public void wrap_should_work_fine_with_change_of_error_code() {
         try {
             throw new TotoException(TotoErrorCode.JOKE_MODE);
         } catch (TotoException e) {
@@ -58,21 +58,11 @@ public class VerboseExceptionTest {
     }
 
     @Test(expected = VerboseException.class)
-    public void wrap_Should_Work_Fine_1() {
+    public void wrap_should_work_fine() {
         try {
             throw new TotoException(TotoErrorCode.JOKE_MODE);
         } catch (TotoException exception) {
             throw VerboseException.wrap(TotoException.class, exception, TotoErrorCode.JOKE_MODE)
-                    .put("Error Code", "this is how we do it !");
-        }
-    }
-
-    @Test(expected = VerboseException.class)
-    public void wrap_Should_Work_Fine_2() {
-        try {
-            throw new TotoException(TotoErrorCode.JOKE_MODE);
-        } catch (TotoException exception) {
-            throw VerboseException.wrap(TotoException.class, exception, TotoErrorCode.CARAMBAR_MODE)
                     .put("Error Code", "this is how we do it !");
         }
     }
@@ -84,8 +74,8 @@ public class VerboseExceptionTest {
         String text = stringWriter.toString();
 
         assertThat(text).contains("Caused by: java.lang.RuntimeException: yop");
-        assertThat(text).contains("Caused by: org.seedstack.shed.lang.VerboseExceptionTest$TotoException: (TOTO) Carambar mode");
-        assertThat(text).contains("org.seedstack.shed.lang.VerboseExceptionTest$TotoException: (TOTO) Joke mode");
+        assertThat(text).contains("Caused by: org.seedstack.shed.lang.VerboseExceptionTest$TotoException: [TOTO] Carambar mode");
+        assertThat(text).contains("org.seedstack.shed.lang.VerboseExceptionTest$TotoException: [TOTO] Joke mode");
     }
 
     @Test

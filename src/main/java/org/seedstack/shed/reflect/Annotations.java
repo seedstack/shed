@@ -14,6 +14,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
 
@@ -83,7 +84,8 @@ public final class Annotations {
                     Classes.from(((Method) startingAnnotatedElement).getDeclaringClass())
                             .traversingInterfaces()
                             .traversingSuperclasses()
-                            .methods(method -> methodsAreEquivalent(method, ((Method) startingAnnotatedElement)))
+                            .methods()
+                            .filter(method -> methodsAreEquivalent(method, ((Method) startingAnnotatedElement)))
                             .forEach(method -> {
                                 annotatedElements.add(method);
                                 if (context.isFallingBackOnClasses()) {
@@ -98,7 +100,8 @@ public final class Annotations {
                 if (context.isTraversingOverriddenMembers()) {
                     Classes.from(((Constructor) startingAnnotatedElement).getDeclaringClass())
                             .traversingSuperclasses()
-                            .constructors(Predicate.isEqual(startingAnnotatedElement))
+                            .constructors()
+                            .filter(Predicate.isEqual(startingAnnotatedElement))
                             .forEach(constructor -> {
                                 annotatedElements.add(constructor);
                                 if (context.isFallingBackOnClasses()) {
@@ -108,7 +111,7 @@ public final class Annotations {
                 }
             }
 
-            T matchingAnnotation;
+            Optional<T> matchingAnnotation;
             for (AnnotatedElement annotatedElement : annotatedElements) {
                 if (annotatedElement instanceof Class<?> && (context.isTraversingInterfaces() || context.isTraversingSuperclasses())) {
                     Classes.FromClass from = Classes.from(((Class<?>) annotatedElement));
@@ -118,17 +121,17 @@ public final class Annotations {
                     if (context.isTraversingSuperclasses()) {
                         from.traversingSuperclasses();
                     }
-                    for (Class<?> traversedClass : from.classes()) {
-                        matchingAnnotation = findAnnotation(traversedClass, annotationClass);
-                        if (matchingAnnotation != null) {
-                            return Optional.of(matchingAnnotation);
-                        }
-                    }
+                    matchingAnnotation = from.classes()
+                            .map(traversedClass -> findAnnotation(traversedClass, annotationClass))
+                            .filter(Objects::nonNull)
+                            .findFirst();
                 } else {
-                    matchingAnnotation = findAnnotation(annotatedElement, annotationClass);
-                    if (matchingAnnotation != null) {
-                        return Optional.of(matchingAnnotation);
-                    }
+                    matchingAnnotation = Optional.ofNullable(findAnnotation(annotatedElement, annotationClass));
+                }
+
+                // short circuit if found
+                if (matchingAnnotation.isPresent()) {
+                    return matchingAnnotation;
                 }
             }
             return Optional.empty();

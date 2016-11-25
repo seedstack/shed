@@ -16,13 +16,13 @@ public class TextUtilsTest {
     private String longString = "Nec vox accusatoris ulla licet subditicii in his malorum quaerebatur acervis ut saltem specie tenus crimina praescriptis legum committerentur, quod aliquotiens fecere principes saevi: sed quicquid Caesaris implacabilitati sedisset, id velut fas iusque perpensum confestim urgebatur impleri.";
 
     @Test
-    public void testSplitWords() throws Exception {
+    public void splitWords() throws Exception {
         String words[] = TextUtils.splitWords(longString);
         assertThat(String.join(" ", (CharSequence[]) words)).isEqualTo(longString);
     }
 
     @Test
-    public void testSimpleWrap() throws Exception {
+    public void simpleWrap() throws Exception {
         String wrapped = TextUtils.wrap(longString, 80);
         for (String line : wrapped.split("\n")) {
             assertThat(line.length()).isLessThanOrEqualTo(80);
@@ -30,7 +30,7 @@ public class TextUtilsTest {
     }
 
     @Test
-    public void testWrapPreserveShortStrings() throws Exception {
+    public void wrapPreserveShortStrings() throws Exception {
         String stringWithNewLine = "Nec vox accusatoris\n";
         assertThat(TextUtils.wrap(stringWithNewLine, 80)).isEqualTo(stringWithNewLine);
         String stringWithoutNewLine = "Nec vox accusatoris";
@@ -38,7 +38,7 @@ public class TextUtilsTest {
     }
 
     @Test
-    public void testLongWordWrap() throws Exception {
+    public void longWordWrap() throws Exception {
         String longWord = "abcdefghijklmnopqrstuvwxyz----abcdefghijklmnopqrstuvwxyz----abcdefghijklmnopqrstuvwxyz----";
         String wrapped = TextUtils.wrap(longWord, 80);
         for (String line : wrapped.split("\n")) {
@@ -48,7 +48,7 @@ public class TextUtilsTest {
     }
 
     @Test
-    public void testLeftPad() throws Exception {
+    public void leftPad() throws Exception {
         String multiLineString = "abcdefghijklmnopqrstuvwxyz\nabcdefghijklmnopqrstuvwxyz\nabcdefghijklmnopqrstuvwxyz";
         String padded = TextUtils.leftPad(multiLineString, "***", 1);
         boolean first = true;
