@@ -15,6 +15,6 @@ public class ClassLoadersTest {
     @Test
     public void findMostCompleteClassLoader() throws Exception {
         assertThat(ClassLoaders.findMostCompleteClassLoader(ClassLoadersTest.class)).isNotNull();
-        assertThat(ClassLoaders.findMostCompleteClassLoader(null)).isNotNull();
+        assertThat(ClassLoaders.findMostCompleteClassLoader()).isNotNull();
     }
 }

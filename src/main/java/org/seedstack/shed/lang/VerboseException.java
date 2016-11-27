@@ -29,7 +29,6 @@ public class VerboseException extends RuntimeException {
     private static final String MULTIPLE_CAUSES_PATTERN = "%d. %s";
     private static final String CAUSE_PATTERN = "%s @(%s:%d)";
     private static final String ERROR_CODE_PATTERN = "[%s] %s";
-    private static final String SEED_EXCEPTION = VerboseException.class.getName();
     private static final String JAVA_LANG_THROWABLE = "java.lang.Throwable";
     private static final String PRINT_STACK_TRACE = "printStackTrace";
     private static final String CONSTRUCTOR = "<init>";
@@ -318,7 +317,7 @@ public class VerboseException extends RuntimeException {
 
     private StackTraceElement findRelevantStackTraceElement(Throwable t) {
         for (StackTraceElement stackTraceElement : t.getStackTrace()) {
-            if (!SEED_EXCEPTION.equals(stackTraceElement.getClassName())) {
+            if (!stackTraceElement.getClassName().endsWith("Exception")) {
                 return stackTraceElement;
             }
         }

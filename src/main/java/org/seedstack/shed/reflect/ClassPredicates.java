@@ -28,22 +28,15 @@ public final class ClassPredicates {
      */
     public static <T extends AnnotatedElement> Predicate<T> elementAnnotatedWith(Class<? extends Annotation> annotationClass, boolean includeMetaAnnotations) {
         return candidate -> {
-            Annotations.OnClass on = Annotations.on(candidate);
-            if (includeMetaAnnotations) {
-                on.includingMetaAnnotations();
+            if (candidate == null) {
+                return false;
             }
-            return candidate != null && on.find(annotationClass).isPresent();
+            Annotations.OnClass onClass = Annotations.on(candidate);
+            if (includeMetaAnnotations) {
+                onClass.includingMetaAnnotations();
+            }
+            return onClass.find(annotationClass).isPresent();
         };
-    }
-
-    /**
-     * Checks if the candidate is annotated by the specified annotation. This is equivalent to elementAnnotatedWith(annotationClass, false).
-     *
-     * @param annotationClass the annotation to check for.
-     * @return the predicate.
-     */
-    public static <T extends AnnotatedElement> Predicate<T> elementAnnotatedWith(Class<? extends Annotation> annotationClass) {
-        return elementAnnotatedWith(annotationClass, false);
     }
 
     /**

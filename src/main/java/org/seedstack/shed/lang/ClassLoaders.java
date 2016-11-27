@@ -45,4 +45,14 @@ public final class ClassLoaders {
 
         return classLoader;
     }
+
+    /**
+     * Find the most complete class loader by trying the current thread context class loader, then the class loader
+     * that loaded Shed, then the system class loader.
+     *
+     * @return the most complete class loader found.
+     */
+    public static ClassLoader findMostCompleteClassLoader() {
+        return ClassLoaders.findMostCompleteClassLoader(null);
+    }
 }
