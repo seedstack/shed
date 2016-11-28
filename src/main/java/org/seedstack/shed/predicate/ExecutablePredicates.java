@@ -21,7 +21,7 @@ public final class ExecutablePredicates {
      *
      * @return the predicate.
      */
-    public static Predicate<? extends Executable> executableIsSynthetic() {
+    public static <T extends Executable> Predicate<T> executableIsSynthetic() {
         return candidate -> candidate != null && candidate.isSynthetic();
     }
 
