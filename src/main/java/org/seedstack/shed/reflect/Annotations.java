@@ -7,6 +7,8 @@
  */
 package org.seedstack.shed.reflect;
 
+import org.seedstack.shed.predicate.ExecutablePredicates;
+
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Constructor;
@@ -16,7 +18,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Predicate;
 
 public final class Annotations {
     private static final String JAVA_LANG = "java.lang";
@@ -85,7 +86,7 @@ public final class Annotations {
                             .traversingInterfaces()
                             .traversingSuperclasses()
                             .methods()
-                            .filter(method -> methodsAreEquivalent(method, ((Method) startingAnnotatedElement)))
+                            .filter(ExecutablePredicates.executableIsEquivalentTo(((Method) startingAnnotatedElement)))
                             .forEach(method -> {
                                 annotatedElements.add(method);
                                 if (context.isFallingBackOnClasses()) {
@@ -101,7 +102,7 @@ public final class Annotations {
                     Classes.from(((Constructor) startingAnnotatedElement).getDeclaringClass())
                             .traversingSuperclasses()
                             .constructors()
-                            .filter(Predicate.isEqual(startingAnnotatedElement))
+                            .filter(ExecutablePredicates.executableIsEquivalentTo(((Constructor) startingAnnotatedElement)))
                             .forEach(constructor -> {
                                 annotatedElements.add(constructor);
                                 if (context.isFallingBackOnClasses()) {
@@ -163,26 +164,6 @@ public final class Annotations {
                 }
             }
             return null;
-        }
-
-        private boolean methodsAreEquivalent(Method left, Method right) {
-            return left.getName().equals(right.getName()) &&
-                    left.getReturnType().equals(right.getReturnType()) &&
-                    methodsHaveSameParameterTypes(left, right);
-        }
-
-        private boolean methodsHaveSameParameterTypes(Method left, Method right) {
-            Class<?>[] leftParameterTypes = left.getParameterTypes();
-            Class<?>[] rightParameterTypes = right.getParameterTypes();
-            if (leftParameterTypes.length != rightParameterTypes.length) {
-                return false;
-            }
-            for (int i = 0; i < leftParameterTypes.length; i++) {
-                if (!leftParameterTypes[i].equals(rightParameterTypes[i])) {
-                    return false;
-                }
-            }
-            return true;
         }
     }
 

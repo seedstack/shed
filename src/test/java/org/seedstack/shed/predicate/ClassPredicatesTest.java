@@ -5,7 +5,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package org.seedstack.shed.reflect;
+package org.seedstack.shed.predicate;
 
 import org.junit.Test;
 
@@ -42,23 +42,6 @@ public class ClassPredicatesTest {
         private void someMethod() {
 
         }
-    }
-
-    private static class ExtendingAnnotatedElements extends AnnotatedElements {
-
-    }
-
-    @Test
-    public void elementAnnotatedWith() throws Exception {
-        assertThat(ClassPredicates.elementAnnotatedWith(SomeAnnotation.class, false).test(AnnotatedElements.class)).isTrue();
-        assertThat(ClassPredicates.elementAnnotatedWith(SomeAnnotation.class, false).test(AnnotatedElements.class.getDeclaredField("someField"))).isTrue();
-        assertThat(ClassPredicates.elementAnnotatedWith(SomeAnnotation.class, false).test(AnnotatedElements.class.getDeclaredMethod("someMethod"))).isTrue();
-        assertThat(ClassPredicates.elementAnnotatedWith(SomeMetaAnnotation.class, false).test(AnnotatedElements.class)).isFalse();
-        assertThat(ClassPredicates.elementAnnotatedWith(SomeMetaAnnotation.class, false).test(AnnotatedElements.class.getDeclaredField("someField"))).isFalse();
-        assertThat(ClassPredicates.elementAnnotatedWith(SomeMetaAnnotation.class, false).test(AnnotatedElements.class.getDeclaredMethod("someMethod"))).isFalse();
-        assertThat(ClassPredicates.elementAnnotatedWith(SomeMetaAnnotation.class, true).test(AnnotatedElements.class)).isTrue();
-        assertThat(ClassPredicates.elementAnnotatedWith(SomeMetaAnnotation.class, true).test(AnnotatedElements.class.getDeclaredField("someField"))).isTrue();
-        assertThat(ClassPredicates.elementAnnotatedWith(SomeMetaAnnotation.class, true).test(AnnotatedElements.class.getDeclaredMethod("someMethod"))).isTrue();
     }
 
     @Test
@@ -104,29 +87,8 @@ public class ClassPredicatesTest {
     }
 
     @Test
-    public void atLeastOneMethodAnnotatedWith() throws Exception {
-        assertThat(ClassPredicates.atLeastOneMethodAnnotatedWith(SomeAnnotation.class, false).test(AnnotatedElements.class)).isTrue();
-        assertThat(ClassPredicates.atLeastOneMethodAnnotatedWith(SomeMetaAnnotation.class, false).test(AnnotatedElements.class)).isFalse();
-        assertThat(ClassPredicates.atLeastOneMethodAnnotatedWith(SomeMetaAnnotation.class, true).test(AnnotatedElements.class)).isTrue();
-    }
-
-    @Test
-    public void atLeastOneFieldAnnotatedWith() throws Exception {
-        assertThat(ClassPredicates.atLeastOneFieldAnnotatedWith(SomeAnnotation.class, false).test(AnnotatedElements.class)).isTrue();
-        assertThat(ClassPredicates.atLeastOneFieldAnnotatedWith(SomeMetaAnnotation.class, false).test(AnnotatedElements.class)).isFalse();
-        assertThat(ClassPredicates.atLeastOneFieldAnnotatedWith(SomeMetaAnnotation.class, true).test(AnnotatedElements.class)).isTrue();
-    }
-
-    @Test
     public void ancestorImplements() throws Exception {
         assertThat(ClassPredicates.ancestorImplements(Collection.class).test(ArrayList.class)).isTrue();
         assertThat(ClassPredicates.ancestorImplements(Serializable.class).test(ArrayList.class)).isFalse();
-    }
-
-    @Test
-    public void ancestorAnnotatedWith() throws Exception {
-        assertThat(ClassPredicates.ancestorAnnotatedWith(SomeAnnotation.class, false).test(ExtendingAnnotatedElements.class)).isTrue();
-        assertThat(ClassPredicates.ancestorAnnotatedWith(SomeMetaAnnotation.class, false).test(ExtendingAnnotatedElements.class)).isFalse();
-        assertThat(ClassPredicates.ancestorAnnotatedWith(SomeMetaAnnotation.class, true).test(ExtendingAnnotatedElements.class)).isTrue();
     }
 }

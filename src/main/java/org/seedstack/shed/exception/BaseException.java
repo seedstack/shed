@@ -5,9 +5,11 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package org.seedstack.shed.lang;
+package org.seedstack.shed.exception;
 
+import org.seedstack.shed.text.TextTemplate;
 import org.seedstack.shed.text.TextUtils;
+import org.seedstack.shed.text.TextWrapper;
 
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
@@ -23,9 +25,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * exception: detailed message, fix advice and online URL. Extra attributes can be added to the exception and used in
  * message templates.
  */
-public class VerboseException extends RuntimeException {
+public abstract class BaseException extends RuntimeException {
     private static final long serialVersionUID = 1L;
-    private static final int WRAP_LENGTH = 120;
     private static final String MULTIPLE_CAUSES_PATTERN = "%d. %s";
     private static final String CAUSE_PATTERN = "%s @(%s:%d)";
     private static final String ERROR_CODE_PATTERN = "[%s] %s";
@@ -33,6 +34,7 @@ public class VerboseException extends RuntimeException {
     private static final String PRINT_STACK_TRACE = "printStackTrace";
     private static final String CONSTRUCTOR = "<init>";
     private static final String COM_GOOGLE_INJECT_INTERNAL_ERRORS = "com.google.inject.internal.Errors";
+    private static final TextWrapper textWrapper = new TextWrapper();
 
     private final ErrorCode errorCode;
     private final Map<String, Object> properties = new HashMap<>();
@@ -45,22 +47,22 @@ public class VerboseException extends RuntimeException {
     private String url;
 
     /**
-     * Create a VerboseException from an {@link ErrorCode}.
+     * Create a BaseException from an {@link ErrorCode}.
      *
      * @param errorCode the error code.
      */
-    protected VerboseException(ErrorCode errorCode) {
+    protected BaseException(ErrorCode errorCode) {
         super(formatErrorCode(errorCode));
         this.errorCode = errorCode;
     }
 
     /**
-     * Create a VerboseException from an {@link ErrorCode} wrapping a {@link Throwable}.
+     * Create a BaseException from an {@link ErrorCode} wrapping a {@link Throwable}.
      *
      * @param errorCode the error code.
      * @param cause     the cause of this exception if any.
      */
-    protected VerboseException(ErrorCode errorCode, Throwable cause) {
+    protected BaseException(ErrorCode errorCode, Throwable cause) {
         super(formatErrorCode(errorCode), cause);
         this.errorCode = errorCode;
     }
@@ -104,7 +106,7 @@ public class VerboseException extends RuntimeException {
      * @return this exception (to chain calls).
      */
     @SuppressWarnings("unchecked")
-    public <E extends VerboseException> E put(String name, Object value) {
+    public <E extends BaseException> E put(String name, Object value) {
         properties.put(name, value);
         return (E) this;
     }
@@ -112,7 +114,7 @@ public class VerboseException extends RuntimeException {
     /**
      * The toString() method is overloaded to provide additional exception details. When invoked directly it only returns
      * the details of this exception. When invoked from printStackTrace() it returns the details of this exception and
-     * flags all causes of VerboseException type to only display their short message when their toString() method will be
+     * flags all causes of BaseException type to only display their short message when their toString() method will be
      * invoked by printStacktrace(). This uses a ThreadLocal implementation of the flag to stay thread-safe.
      *
      * @return a textual representation of the exception.
@@ -128,17 +130,17 @@ public class VerboseException extends RuntimeException {
         }
 
         if (location == 2) {
-            // if called from printStackTrace() we ensure that only the first VerboseException is fully displayed
+            // if called from printStackTrace() we ensure that only the first BaseException is fully displayed
             try {
                 if (alreadyVisited.get()) {
-                    // Already displayed in the cause list of the first VerboseException
+                    // Already displayed in the cause list of the first BaseException
                     return super.toString();
                 } else {
-                    // First VerboseException to be displayed in a causal chain
+                    // First BaseException to be displayed in a causal chain
                     Throwable theCause = getCause();
                     while (theCause != null) {
-                        if (theCause instanceof VerboseException) {
-                            ((VerboseException) theCause).alreadyVisited.set(true);
+                        if (theCause instanceof BaseException) {
+                            ((BaseException) theCause).alreadyVisited.set(true);
                         }
                         theCause = theCause.getCause();
                     }
@@ -158,21 +160,21 @@ public class VerboseException extends RuntimeException {
         if (seedMessage != null) {
             ensureBlankLine(s);
             s.append("Description\n-----------\n");
-            s.append(TextUtils.wrap(seedMessage, WRAP_LENGTH));
+            s.append(textWrapper.wrap(seedMessage));
         }
 
         int i = causes.size();
         if (i == 1) {
             ensureBlankLine(s);
             s.append("Cause\n-----\n");
-            s.append(TextUtils.wrap(causes.get(0), WRAP_LENGTH));
+            s.append(textWrapper.wrap(causes.get(0)));
         } else if (i > 1) {
             ensureBlankLine(s);
             s.append("Causes\n------\n");
             int count = 1;
             for (String seedCause : causes) {
                 ensureBlankLine(s);
-                s.append(String.format(MULTIPLE_CAUSES_PATTERN, count, TextUtils.leftPad(TextUtils.wrap(seedCause, WRAP_LENGTH), "   ", 1)));
+                s.append(String.format(MULTIPLE_CAUSES_PATTERN, count, TextUtils.leftPad(textWrapper.wrap(seedCause), "   ", 1)));
                 count++;
             }
         }
@@ -180,7 +182,7 @@ public class VerboseException extends RuntimeException {
         if (fix != null) {
             ensureBlankLine(s);
             s.append("Fix\n---\n");
-            s.append(TextUtils.wrap(fix, WRAP_LENGTH));
+            s.append(textWrapper.wrap(fix));
         }
 
         if (url != null) {
@@ -260,25 +262,25 @@ public class VerboseException extends RuntimeException {
         Throwable theCause = getCause();
         while (theCause != null) {
             String causeMessage;
-            if (theCause instanceof VerboseException) {
-                VerboseException seedCause = (VerboseException) theCause;
+            if (theCause instanceof BaseException) {
+                BaseException seedCause = (BaseException) theCause;
 
                 // Find the fix at lowest depth
                 String fixTemplate = seedCause.getTemplate("fix");
                 if (fixTemplate != null) {
-                    fix = TextUtils.replaceTokens(fixTemplate, seedCause.getProperties());
+                    fix = new TextTemplate(fixTemplate).render(seedCause.getProperties());
                 }
 
                 // Also get the url
                 String urlTemplate = seedCause.getTemplate("url");
                 if (urlTemplate != null) {
-                    url = TextUtils.replaceTokens(urlTemplate, seedCause.getProperties());
+                    url = new TextTemplate(urlTemplate).render(seedCause.getProperties());
                 }
 
                 // Collects all cause messages from highest to lowest level
                 String seedCauseErrorTemplate = seedCause.getTemplate(null);
                 if (seedCauseErrorTemplate != null) {
-                    causeMessage = String.format(ERROR_CODE_PATTERN, formatErrorClass(seedCause.getErrorCode()), TextUtils.replaceTokens(seedCauseErrorTemplate, seedCause.getProperties()));
+                    causeMessage = String.format(ERROR_CODE_PATTERN, formatErrorClass(seedCause.getErrorCode()), new TextTemplate(seedCauseErrorTemplate).render(seedCause.getProperties()));
                 } else {
                     causeMessage = seedCause.getMessage();
                 }
@@ -296,21 +298,21 @@ public class VerboseException extends RuntimeException {
         if (message == null) {
             String messageTemplate = getTemplate(null);
             if (messageTemplate != null) {
-                message = TextUtils.replaceTokens(messageTemplate, getProperties());
+                message = new TextTemplate(messageTemplate).render(getProperties());
             }
         }
 
         if (fix == null) {
             String fixTemplate = getTemplate("fix");
             if (fixTemplate != null) {
-                fix = TextUtils.replaceTokens(fixTemplate, getProperties());
+                fix = new TextTemplate(fixTemplate).render(getProperties());
             }
         }
 
         if (url == null) {
             String urlTemplate = getTemplate("url");
             if (urlTemplate != null) {
-                url = TextUtils.replaceTokens(urlTemplate, getProperties());
+                url = new TextTemplate(urlTemplate).render(getProperties());
             }
         }
     }
@@ -367,14 +369,14 @@ public class VerboseException extends RuntimeException {
     }
 
     /**
-     * Create a new subclass of VerboseException from an {@link ErrorCode}.
+     * Create a new subclass of BaseException from an {@link ErrorCode}.
      *
-     * @param exceptionType the subclass of VerboseException to create.
+     * @param exceptionType the subclass of BaseException to create.
      * @param errorCode     the error code to set.
      * @param <E>           the subtype.
-     * @return the created VerboseException.
+     * @return the created BaseException.
      */
-    public static <E extends VerboseException> E createNew(Class<E> exceptionType, ErrorCode errorCode) {
+    public static <E extends BaseException> E createNew(Class<E> exceptionType, ErrorCode errorCode) {
         try {
             Constructor<E> constructor = exceptionType.getDeclaredConstructor(ErrorCode.class);
             constructor.setAccessible(true);
@@ -385,15 +387,15 @@ public class VerboseException extends RuntimeException {
     }
 
     /**
-     * Wrap a subclass of VerboseException with an {@link ErrorCode} around an existing {@link Throwable}.
+     * Wrap a subclass of BaseException with an {@link ErrorCode} around an existing {@link Throwable}.
      *
-     * @param exceptionType the subclass of VerboseException to create.
+     * @param exceptionType the subclass of BaseException to create.
      * @param throwable     the existing throwable to wrap.
      * @param errorCode     the error code to set.
      * @param <E>           the subtype.
-     * @return the created VerboseException.
+     * @return the created BaseException.
      */
-    public static <E extends VerboseException> E wrap(Class<E> exceptionType, Throwable throwable, ErrorCode errorCode) {
+    public static <E extends BaseException> E wrap(Class<E> exceptionType, Throwable throwable, ErrorCode errorCode) {
         try {
             Constructor<E> constructor = exceptionType.getDeclaredConstructor(ErrorCode.class, Throwable.class);
             constructor.setAccessible(true);
@@ -401,9 +403,5 @@ public class VerboseException extends RuntimeException {
         } catch (Exception e) {
             throw new IllegalArgumentException(exceptionType.getCanonicalName() + " must implement a constructor with an ErrorCode and a Throwable as parameters", e);
         }
-    }
-
-    public interface ErrorCode {
-
     }
 }

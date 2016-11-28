@@ -22,32 +22,6 @@ public class TextUtilsTest {
     }
 
     @Test
-    public void simpleWrap() throws Exception {
-        String wrapped = TextUtils.wrap(longString, 80);
-        for (String line : wrapped.split("\n")) {
-            assertThat(line.length()).isLessThanOrEqualTo(80);
-        }
-    }
-
-    @Test
-    public void wrapPreserveShortStrings() throws Exception {
-        String stringWithNewLine = "Nec vox accusatoris\n";
-        assertThat(TextUtils.wrap(stringWithNewLine, 80)).isEqualTo(stringWithNewLine);
-        String stringWithoutNewLine = "Nec vox accusatoris";
-        assertThat(TextUtils.wrap(stringWithoutNewLine, 80)).isEqualTo(stringWithoutNewLine);
-    }
-
-    @Test
-    public void longWordWrap() throws Exception {
-        String longWord = "abcdefghijklmnopqrstuvwxyz----abcdefghijklmnopqrstuvwxyz----abcdefghijklmnopqrstuvwxyz----";
-        String wrapped = TextUtils.wrap(longWord, 80);
-        for (String line : wrapped.split("\n")) {
-            assertThat(line.length()).isLessThanOrEqualTo(80);
-        }
-        assertThat(wrapped).contains("—");
-    }
-
-    @Test
     public void leftPad() throws Exception {
         String multiLineString = "abcdefghijklmnopqrstuvwxyz\nabcdefghijklmnopqrstuvwxyz\nabcdefghijklmnopqrstuvwxyz";
         String padded = TextUtils.leftPad(multiLineString, "***", 1);
