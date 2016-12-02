@@ -7,17 +7,20 @@
  */
 package org.seedstack.shed.reflect;
 
+import org.seedstack.shed.predicate.AnnotationPredicates;
 import org.seedstack.shed.predicate.ExecutablePredicates;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Executable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
 public final class Annotations {
     private static final String JAVA_LANG = "java.lang";
@@ -34,12 +37,8 @@ public final class Annotations {
         return new OnAnnotatedElement(new Context(field));
     }
 
-    public static OnMethodOrConstructor on(Method someMethod) {
-        return new OnMethodOrConstructor(new Context(someMethod));
-    }
-
-    public static OnMethodOrConstructor on(Constructor<?> someConstructor) {
-        return new OnMethodOrConstructor(new Context(someConstructor));
+    public static OnExecutable on(Executable someExecutable) {
+        return new OnExecutable(new Context(someExecutable));
     }
 
     public static OnClass on(Class<?> someClass) {
@@ -68,7 +67,12 @@ public final class Annotations {
             return this;
         }
 
+        @SuppressWarnings("unchecked")
         public <T extends Annotation> Optional<T> find(Class<T> annotationClass) {
+            return (Optional<T>) findAll().filter(AnnotationPredicates.annotationIsOfClass(annotationClass)).findFirst();
+        }
+
+        public Stream<Annotation> findAll() {
             AnnotatedElement startingAnnotatedElement = context.getAnnotatedElement();
             List<AnnotatedElement> annotatedElements = new ArrayList<>();
             annotatedElements.add(startingAnnotatedElement);
@@ -112,7 +116,7 @@ public final class Annotations {
                 }
             }
 
-            Optional<T> matchingAnnotation;
+            Stream.Builder<Stream<Annotation>> builder = Stream.builder();
             for (AnnotatedElement annotatedElement : annotatedElements) {
                 if (annotatedElement instanceof Class<?> && (context.isTraversingInterfaces() || context.isTraversingSuperclasses())) {
                     Classes.FromClass from = Classes.from(((Class<?>) annotatedElement));
@@ -122,48 +126,35 @@ public final class Annotations {
                     if (context.isTraversingSuperclasses()) {
                         from.traversingSuperclasses();
                     }
-                    matchingAnnotation = from.classes()
-                            .map(traversedClass -> findAnnotation(traversedClass, annotationClass))
-                            .filter(Objects::nonNull)
-                            .findFirst();
+                    builder.add(from.classes().map(this::findAnnotations).flatMap(Function.identity()));
                 } else {
-                    matchingAnnotation = Optional.ofNullable(findAnnotation(annotatedElement, annotationClass));
-                }
-
-                // short circuit if found
-                if (matchingAnnotation.isPresent()) {
-                    return matchingAnnotation;
+                    builder.add(findAnnotations(annotatedElement));
                 }
             }
-            return Optional.empty();
+            return builder.build().flatMap(Function.identity());
         }
 
-        @SuppressWarnings("unchecked")
-        private <T extends Annotation> T findAnnotation(AnnotatedElement annotatedElement, Class<T> toFind) {
-            Annotation result = annotatedElement.getAnnotation(toFind);
-            if (result == null && context.isIncludingMetaAnnotations()) {
-                for (Annotation candidateAnnotation : annotatedElement.getAnnotations()) {
-                    result = findAnnotation(candidateAnnotation, toFind);
-                    if (result != null) {
-                        break;
+        private Stream<Annotation> findAnnotations(AnnotatedElement annotatedElement) {
+            Stream.Builder<Stream<Annotation>> builder = Stream.builder();
+            for (Annotation annotation : annotatedElement.getAnnotations()) {
+                if (!annotation.annotationType().getPackage().getName().startsWith(JAVA_LANG)) {
+                    builder.add(Stream.of(annotation));
+                    if (context.isIncludingMetaAnnotations()) {
+                        builder.add(findMetaAnnotations(annotation));
                     }
                 }
             }
-            return (T) result;
+            return builder.build().flatMap(Function.identity());
         }
 
-        @SuppressWarnings("unchecked")
-        private <T extends Annotation> T findAnnotation(Annotation from, Class<T> toFind) {
-            if (toFind.isAssignableFrom(from.annotationType())) {
-                return (T) from;
-            } else {
-                for (Annotation anno : from.annotationType().getAnnotations()) {
-                    if (!anno.annotationType().getPackage().getName().startsWith(JAVA_LANG)) {
-                        return findAnnotation(anno, toFind);
-                    }
+        private Stream<Annotation> findMetaAnnotations(Annotation from) {
+            Stream.Builder<Stream<Annotation>> builder = Stream.builder();
+            for (Annotation annotation : from.annotationType().getAnnotations()) {
+                if (!annotation.annotationType().getPackage().getName().startsWith(JAVA_LANG)) {
+                    builder.add(Stream.concat(Stream.of(annotation), findMetaAnnotations(annotation)));
                 }
             }
-            return null;
+            return builder.build().flatMap(Function.identity());
         }
     }
 
@@ -178,12 +169,12 @@ public final class Annotations {
         }
     }
 
-    public static class OnMethodOrConstructor extends OnAnnotatedElement {
-        public OnMethodOrConstructor(Context context) {
+    public static class OnExecutable extends OnAnnotatedElement {
+        public OnExecutable(Context context) {
             super(context);
         }
 
-        public OnMethodOrConstructor traversingOverriddenMembers() {
+        public OnExecutable traversingOverriddenMembers() {
             context.setTraversingOverriddenMembers(true);
             return this;
         }

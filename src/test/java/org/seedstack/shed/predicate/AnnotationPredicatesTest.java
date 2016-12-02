@@ -71,9 +71,9 @@ public class AnnotationPredicatesTest {
     }
 
     @Test
-    public void ancestorAnnotatedWith() throws Exception {
-        assertThat(AnnotationPredicates.ancestorAnnotatedWith(SomeAnnotation.class, false).test(ExtendingAnnotatedElements.class)).isTrue();
-        assertThat(AnnotationPredicates.ancestorAnnotatedWith(SomeMetaAnnotation.class, false).test(ExtendingAnnotatedElements.class)).isFalse();
-        assertThat(AnnotationPredicates.ancestorAnnotatedWith(SomeMetaAnnotation.class, true).test(ExtendingAnnotatedElements.class)).isTrue();
+    public void elementOrAncestorAnnotatedWith() throws Exception {
+        assertThat(AnnotationPredicates.classOrAncestorAnnotatedWith(SomeAnnotation.class, false).test(ExtendingAnnotatedElements.class)).isTrue();
+        assertThat(AnnotationPredicates.classOrAncestorAnnotatedWith(SomeMetaAnnotation.class, false).test(ExtendingAnnotatedElements.class)).isFalse();
+        assertThat(AnnotationPredicates.classOrAncestorAnnotatedWith(SomeMetaAnnotation.class, true).test(ExtendingAnnotatedElements.class)).isTrue();
     }
 }

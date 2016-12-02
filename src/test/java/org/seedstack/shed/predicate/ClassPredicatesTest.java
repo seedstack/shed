@@ -9,7 +9,6 @@ package org.seedstack.shed.predicate;
 
 import org.junit.Test;
 
-import java.io.Serializable;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -84,11 +83,5 @@ public class ClassPredicatesTest {
     public void atLeastOneConstructorIsPublic() throws Exception {
         assertThat(ClassPredicates.atLeastOneConstructorIsPublic().test(ClassPredicates.class)).isFalse();
         assertThat(ClassPredicates.atLeastOneConstructorIsPublic().test(String.class)).isTrue();
-    }
-
-    @Test
-    public void ancestorImplements() throws Exception {
-        assertThat(ClassPredicates.ancestorImplements(Collection.class).test(ArrayList.class)).isTrue();
-        assertThat(ClassPredicates.ancestorImplements(Serializable.class).test(ArrayList.class)).isFalse();
     }
 }

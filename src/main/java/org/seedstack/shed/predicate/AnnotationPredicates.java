@@ -40,6 +40,42 @@ public final class AnnotationPredicates {
     }
 
     /**
+     * Checks if the candidate is annotated by the specified annotation or meta-annotation.
+     *
+     * @param annotationClass        the annotation to check for.
+     * @param includeMetaAnnotations if true, meta-annotations are included in the search.
+     * @return the predicate.
+     */
+    public static <T extends Annotation> Predicate<T> annotationAnnotatedWith(Class<? extends Annotation> annotationClass, boolean includeMetaAnnotations) {
+        return candidate -> elementAnnotatedWith(annotationClass, includeMetaAnnotations).test(candidate.annotationType());
+    }
+
+    /**
+     * Checks if the candidate or one of its superclasses or interfaces is annotated with the specified annotation.
+     *
+     * @param annotationClass        the requested annotation
+     * @param includeMetaAnnotations if true, meta-annotations are included in the search.
+     * @return the predicate.
+     */
+    public static Predicate<Class<?>> classOrAncestorAnnotatedWith(final Class<? extends Annotation> annotationClass, boolean includeMetaAnnotations) {
+        return candidate -> candidate != null && Classes.from(candidate)
+                .traversingSuperclasses()
+                .traversingInterfaces()
+                .classes()
+                .anyMatch(elementAnnotatedWith(annotationClass, includeMetaAnnotations));
+    }
+
+    /**
+     * Checks if the candidate annotation is of the specified annotation class.
+     *
+     * @param annotationClass the annotation class to check for.
+     * @return the predicate.
+     */
+    public static Predicate<Annotation> annotationIsOfClass(final Class<? extends Annotation> annotationClass) {
+        return candidate -> candidate != null && candidate.annotationType().equals(annotationClass);
+    }
+
+    /**
      * Checks if the candidate or one of its superclasses has at least one field annotated or meta-annotated by the given annotation.
      *
      * @param annotationClass        the requested annotation
@@ -68,20 +104,5 @@ public final class AnnotationPredicates {
                 .methods()
                 .anyMatch(elementAnnotatedWith(annotationClass, includeMetaAnnotations));
 
-    }
-
-    /**
-     * Checks if the candidate has one of its superclasses or interfaces annotated with the specified annotation.
-     *
-     * @param annotationClass        the requested annotation
-     * @param includeMetaAnnotations if true, meta-annotations are included in the search.
-     * @return the predicate.
-     */
-    public static Predicate<Class<?>> ancestorAnnotatedWith(final Class<? extends Annotation> annotationClass, boolean includeMetaAnnotations) {
-        return candidate -> candidate != null && candidate.getSuperclass() != null && Classes.from(candidate.getSuperclass())
-                .traversingSuperclasses()
-                .traversingInterfaces()
-                .classes()
-                .anyMatch(elementAnnotatedWith(annotationClass, includeMetaAnnotations));
     }
 }

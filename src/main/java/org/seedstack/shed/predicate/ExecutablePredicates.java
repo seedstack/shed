@@ -26,14 +26,24 @@ public final class ExecutablePredicates {
     }
 
     /**
-     * Checks if a candidate executable does belong to object.
+     * Checks if a candidate executable does belong to the specified class.
      *
+     * @param reference the class to check against.
      * @return the predicate.
      */
-    public static <T extends Executable> Predicate<T> executableBelongsToObject() {
-        return candidate -> candidate != null && Object.class.equals(candidate.getDeclaringClass());
+    public static <T extends Executable> Predicate<T> executableBelongsToClass(Class<?> reference) {
+        return candidate -> candidate != null && reference.equals(candidate.getDeclaringClass());
     }
 
+    /**
+     * Checks if a candidate executable does belong to a class assignable as the specified class.
+     *
+     * @param reference the class to check against.
+     * @return the predicate.
+     */
+    public static <T extends Executable> Predicate<T> executableBelongsToClassAssignableTo(Class<?> reference) {
+        return candidate -> candidate != null && reference.isAssignableFrom(candidate.getDeclaringClass());
+    }
 
     /**
      * Checks if a candidate executable is equivalent to the specified reference executable.

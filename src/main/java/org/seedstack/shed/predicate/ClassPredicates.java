@@ -11,7 +11,6 @@ import org.seedstack.shed.reflect.Classes;
 
 import java.lang.reflect.Executable;
 import java.lang.reflect.Modifier;
-import java.util.Arrays;
 import java.util.function.Predicate;
 
 public final class ClassPredicates {
@@ -30,12 +29,22 @@ public final class ClassPredicates {
     }
 
     /**
-     * Check if a candidate class is implementing or extending the specified class.
+     * Check if a candidate class is assignable to the specified class.
      *
-     * @param ancestor the extended or implemented class to check for.
+     * @param ancestor the class to check for.
      * @return the predicate.
      */
     public static Predicate<Class<?>> classIsAssignableFrom(Class<?> ancestor) {
+        return candidate -> candidate != null && ancestor.isAssignableFrom(candidate);
+    }
+
+    /**
+     * Check if a candidate class is strictly a descendant of the specified class (not the specified class itself).
+     *
+     * @param ancestor the ancestor class to check for.
+     * @return the predicate.
+     */
+    public static Predicate<Class<?>> classIsDescendantOf(Class<?> ancestor) {
         return candidate -> candidate != null && candidate != ancestor && ancestor.isAssignableFrom(candidate);
     }
 
@@ -95,20 +104,5 @@ public final class ClassPredicates {
         return candidate -> candidate != null && Classes.from(candidate)
                 .constructors()
                 .anyMatch(executableModifierIs(Modifier.PUBLIC));
-    }
-
-    /**
-     * Checks if a candidate class has one of its superclasses implementing the specified interface.
-     *
-     * @param interfaceClass the interface to check for.
-     * @return the predicate.
-     */
-    public static Predicate<Class<?>> ancestorImplements(final Class<?> interfaceClass) {
-        return candidate -> candidate != null && candidate.getSuperclass() != null && Classes.from(candidate.getSuperclass())
-                .traversingSuperclasses()
-                .classes()
-                .map(Class::getInterfaces)
-                .flatMap(Arrays::stream)
-                .anyMatch(Predicate.isEqual(interfaceClass));
     }
 }
