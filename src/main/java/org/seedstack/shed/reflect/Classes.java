@@ -11,6 +11,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -20,8 +21,29 @@ public final class Classes {
         // no instantiation allowed
     }
 
+    /**
+     * Define the starting point of class reflection.
+     *
+     * @param someClass the starting class for reflection operations.
+     * @return the DSL.
+     */
     public static FromClass from(Class<?> someClass) {
         return new FromClass(new Context(someClass));
+    }
+
+    /**
+     * Checks if a class exists in the classpath.
+     *
+     * @param dependency class to look for.
+     * @return an {@link Optional} of the class (empty if class is not present).
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> Optional<Class<T>> optional(String dependency) {
+        try {
+            return Optional.of((Class<T>) Class.forName(dependency));
+        } catch (ClassNotFoundException e) {
+            return Optional.empty();
+        }
     }
 
     public static class End {

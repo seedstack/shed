@@ -5,9 +5,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package org.seedstack.shed.predicate;
+package org.seedstack.shed.reflect;
 
 import org.junit.Test;
+import org.seedstack.shed.reflect.ClassPredicates;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

@@ -7,9 +7,6 @@
  */
 package org.seedstack.shed.reflect;
 
-import org.seedstack.shed.predicate.AnnotationPredicates;
-import org.seedstack.shed.predicate.ExecutablePredicates;
-
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Constructor;
