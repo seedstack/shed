@@ -19,10 +19,10 @@
 
     <groupId>org.seedstack.shed</groupId>
     <artifactId>shed</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.1-SNAPSHOT</version>
 
     <properties>
-        <compatibility.skip>true</compatibility.skip>
+        <compatibility.version>1.0.0</compatibility.version>
         <bintray.package>shed</bintray.package>
     </properties>
 
