@@ -44,6 +44,18 @@
                         </licenseMerges>
                     </configuration>
                 </plugin>
+                <plugin>
+                    <groupId>com.github.siom79.japicmp</groupId>
+                    <artifactId>japicmp-maven-plugin</artifactId>
+                    <configuration>
+                        <parameter>
+                            <excludes>
+                                <exclude>*.internal.*</exclude>
+                                <exclude>org.seedstack.shed.reflect.StandardAnnotationResolver</exclude>
+                            </excludes>
+                        </parameter>
+                    </configuration>
+                </plugin>
             </plugins>
         </pluginManagement>
     </build>
