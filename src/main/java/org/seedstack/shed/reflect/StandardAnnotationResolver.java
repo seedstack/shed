@@ -13,10 +13,8 @@ import java.lang.reflect.Executable;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Optional;
-import java.util.function.Function;
-import java.util.function.Predicate;
 
-public abstract class StandardAnnotationResolver<E extends AnnotatedElement, A extends Annotation> implements Function<E, Optional<A>>, Predicate<E> {
+public abstract class StandardAnnotationResolver<E extends AnnotatedElement, A extends Annotation> implements AnnotationResolver<E, A> {
     private final Class<E> annotatedElementClass;
     private final Class<A> annotationClass;
 
