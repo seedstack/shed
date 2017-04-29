@@ -30,27 +30,12 @@
         <pluginManagement>
             <plugins>
                 <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>license-maven-plugin</artifactId>
-                    <configuration>
-                        <includedLicenses>
-                            <includedLicense>Apache 2</includedLicense>
-
-                            <!-- Some licenses are ignored because they are alternatives to acceptable licenses and the plugin doesn't handle alternate licenses -->
-                            <includedLicense>IGNORED_LICENSE</includedLicense>
-                        </includedLicenses>
-                        <licenseMerges>
-                            <licenseMerge>Apache 2|The Apache Software License, Version 2.0</licenseMerge>
-                        </licenseMerges>
-                    </configuration>
-                </plugin>
-                <plugin>
                     <groupId>com.github.siom79.japicmp</groupId>
                     <artifactId>japicmp-maven-plugin</artifactId>
                     <configuration>
                         <parameter>
                             <excludes>
-                                <exclude>*.internal.*</exclude>
+                                <!-- Predicate and Function interfaces have been pulled up in AnnotationResolver -->
                                 <exclude>org.seedstack.shed.reflect.StandardAnnotationResolver</exclude>
                             </excludes>
                         </parameter>
