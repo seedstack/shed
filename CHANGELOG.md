@@ -1,3 +1,7 @@
+# Version 1.1.0 (2017-07-??)
+
+* [new] Add basic utilities for field/method reflection.
+
 # Version 1.0.2 (2017-04-29)
 
 * [chg] Extracted interface for StandardAnnotationResolver.

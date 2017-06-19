@@ -12,9 +12,11 @@ import org.seedstack.shed.text.TextUtils;
 import org.seedstack.shed.text.TextWrapper;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
@@ -356,16 +358,21 @@ public abstract class BaseException extends RuntimeException {
     }
 
     private static String formatErrorCode(ErrorCode errorCode) {
-        String name = errorCode.toString().toLowerCase().replace("_", " ");
+        String name = errorCode.toString()
+                .toLowerCase(Locale.ENGLISH)
+                .replace("_", " ");
         return String.format(
                 ERROR_CODE_PATTERN,
                 formatErrorClass(errorCode),
-                name.substring(0, 1).toUpperCase() + name.substring(1)
+                name.substring(0, 1).toUpperCase(Locale.ENGLISH) + name.substring(1)
         );
     }
 
     private static String formatErrorClass(ErrorCode errorCode) {
-        return errorCode.getClass().getSimpleName().replace("ErrorCodes", "").replace("ErrorCode", "").toUpperCase();
+        return errorCode.getClass().getSimpleName()
+                .replace("ErrorCodes", "")
+                .replace("ErrorCode", "")
+                .toUpperCase(Locale.ENGLISH);
     }
 
     /**
@@ -381,7 +388,7 @@ public abstract class BaseException extends RuntimeException {
             Constructor<E> constructor = exceptionType.getDeclaredConstructor(ErrorCode.class);
             constructor.setAccessible(true);
             return constructor.newInstance(errorCode);
-        } catch (Exception e) {
+        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException | InstantiationException e) {
             throw new IllegalArgumentException(exceptionType.getCanonicalName() + " must implement a constructor with ErrorCode as parameter", e);
         }
     }
@@ -400,7 +407,7 @@ public abstract class BaseException extends RuntimeException {
             Constructor<E> constructor = exceptionType.getDeclaredConstructor(ErrorCode.class, Throwable.class);
             constructor.setAccessible(true);
             return constructor.newInstance(errorCode, throwable);
-        } catch (Exception e) {
+        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException | InstantiationException e) {
             throw new IllegalArgumentException(exceptionType.getCanonicalName() + " must implement a constructor with an ErrorCode and a Throwable as parameters", e);
         }
     }
