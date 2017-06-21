@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public abstract class BaseException extends RuntimeException {
     private static final long serialVersionUID = 1L;
     private static final String MULTIPLE_CAUSES_PATTERN = "%d. %s";
-    private static final String CAUSE_PATTERN = "%s @(%s:%d)";
+    private static final String CAUSE_PATTERN = "%s%n\tat %s.%s(%s:%d)";
     private static final String ERROR_CODE_PATTERN = "[%s] %s";
     private static final String JAVA_LANG_THROWABLE = "java.lang.Throwable";
     private static final String PRINT_STACK_TRACE = "printStackTrace";
@@ -291,7 +291,13 @@ public abstract class BaseException extends RuntimeException {
             }
             StackTraceElement stackTraceElement = findRelevantStackTraceElement(theCause);
             if (stackTraceElement != null) {
-                causes.add(String.format(CAUSE_PATTERN, causeMessage, stackTraceElement.getFileName(), stackTraceElement.getLineNumber()));
+                causes.add(String.format(CAUSE_PATTERN,
+                        causeMessage,
+                        stackTraceElement.getClassName(),
+                        stackTraceElement.getMethodName(),
+                        stackTraceElement.getFileName(),
+                        stackTraceElement.getLineNumber()
+                ));
             }
 
             theCause = theCause.getCause();
