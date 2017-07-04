@@ -7,6 +7,8 @@
  */
 package org.seedstack.shed.reflect;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Constructor;
@@ -15,12 +17,15 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Function;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Stream;
 
 public final class Annotations {
     private static final String JAVA_LANG = "java.lang";
+    private static ConcurrentMap<Context, List<Annotation>> cache = new ConcurrentHashMap<>(1024);
 
     private Annotations() {
         // no instantiation allowed
@@ -43,9 +48,9 @@ public final class Annotations {
     }
 
     public static class OnClass {
-        protected final Context context;
+        final Context context;
 
-        public OnClass(Context context) {
+        OnClass(Context context) {
             this.context = context;
         }
 
@@ -69,7 +74,16 @@ public final class Annotations {
             return (Optional<T>) findAll().filter(AnnotationPredicates.annotationIsOfClass(annotationClass)).findFirst();
         }
 
+        @SuppressFBWarnings(value = "RV_RETURN_VALUE_OF_PUTIFABSENT_IGNORED", justification = "using putIfAbsent for concurrency")
         public Stream<Annotation> findAll() {
+            List<Annotation> annotations = cache.get(context);
+            if (annotations == null) {
+                cache.putIfAbsent(context, annotations = doFindAll(new ArrayList<>(32)));
+            }
+            return annotations.stream();
+        }
+
+        private List<Annotation> doFindAll(List<Annotation> list) {
             AnnotatedElement startingAnnotatedElement = context.getAnnotatedElement();
             List<AnnotatedElement> annotatedElements = new ArrayList<>();
             annotatedElements.add(startingAnnotatedElement);
@@ -113,7 +127,6 @@ public final class Annotations {
                 }
             }
 
-            Stream.Builder<Stream<Annotation>> builder = Stream.builder();
             for (AnnotatedElement annotatedElement : annotatedElements) {
                 if (annotatedElement instanceof Class<?> && (context.isTraversingInterfaces() || context.isTraversingSuperclasses())) {
                     Classes.FromClass from = Classes.from(((Class<?>) annotatedElement));
@@ -123,40 +136,38 @@ public final class Annotations {
                     if (context.isTraversingSuperclasses()) {
                         from.traversingSuperclasses();
                     }
-                    builder.add(from.classes().map(this::findAnnotations).flatMap(Function.identity()));
+                    from.classes().forEach(c -> findAnnotations(c, list));
                 } else {
-                    builder.add(findAnnotations(annotatedElement));
+                    findAnnotations(annotatedElement, list);
                 }
             }
-            return builder.build().flatMap(Function.identity());
+
+            return list;
         }
 
-        private Stream<Annotation> findAnnotations(AnnotatedElement annotatedElement) {
-            Stream.Builder<Stream<Annotation>> builder = Stream.builder();
+        private void findAnnotations(AnnotatedElement annotatedElement, List<Annotation> list) {
             for (Annotation annotation : annotatedElement.getAnnotations()) {
                 if (!annotation.annotationType().getPackage().getName().startsWith(JAVA_LANG)) {
-                    builder.add(Stream.of(annotation));
+                    list.add(annotation);
                     if (context.isIncludingMetaAnnotations()) {
-                        builder.add(findMetaAnnotations(annotation));
+                        findMetaAnnotations(annotation, list);
                     }
                 }
             }
-            return builder.build().flatMap(Function.identity());
         }
 
-        private Stream<Annotation> findMetaAnnotations(Annotation from) {
-            Stream.Builder<Stream<Annotation>> builder = Stream.builder();
+        private void findMetaAnnotations(Annotation from, List<Annotation> list) {
             for (Annotation annotation : from.annotationType().getAnnotations()) {
                 if (!annotation.annotationType().getPackage().getName().startsWith(JAVA_LANG)) {
-                    builder.add(Stream.concat(Stream.of(annotation), findMetaAnnotations(annotation)));
+                    list.add(annotation);
+                    findMetaAnnotations(annotation, list);
                 }
             }
-            return builder.build().flatMap(Function.identity());
         }
     }
 
     public static class OnAnnotatedElement extends OnClass {
-        public OnAnnotatedElement(Context context) {
+        OnAnnotatedElement(Context context) {
             super(context);
         }
 
@@ -167,7 +178,7 @@ public final class Annotations {
     }
 
     public static class OnExecutable extends OnAnnotatedElement {
-        public OnExecutable(Context context) {
+        OnExecutable(Context context) {
             super(context);
         }
 
@@ -189,48 +200,66 @@ public final class Annotations {
             this.annotatedElement = annotatedElement;
         }
 
-        public AnnotatedElement getAnnotatedElement() {
+        AnnotatedElement getAnnotatedElement() {
             return annotatedElement;
         }
 
-        public boolean isTraversingInterfaces() {
+        boolean isTraversingInterfaces() {
             return traversingInterfaces;
         }
 
-        public void setTraversingInterfaces(boolean traversingInterfaces) {
+        void setTraversingInterfaces(boolean traversingInterfaces) {
             this.traversingInterfaces = traversingInterfaces;
         }
 
-        public boolean isTraversingSuperclasses() {
+        boolean isTraversingSuperclasses() {
             return traversingSuperclasses;
         }
 
-        public void setTraversingSuperclasses(boolean traversingSuperclasses) {
+        void setTraversingSuperclasses(boolean traversingSuperclasses) {
             this.traversingSuperclasses = traversingSuperclasses;
         }
 
-        public boolean isTraversingOverriddenMembers() {
+        boolean isTraversingOverriddenMembers() {
             return traversingOverriddenMembers;
         }
 
-        public void setTraversingOverriddenMembers(boolean traversingOverriddenMembers) {
+        void setTraversingOverriddenMembers(boolean traversingOverriddenMembers) {
             this.traversingOverriddenMembers = traversingOverriddenMembers;
         }
 
-        public boolean isFallingBackOnClasses() {
+        boolean isFallingBackOnClasses() {
             return fallingBackOnClasses;
         }
 
-        public void setFallingBackOnClasses(boolean fallingBackOnClasses) {
+        void setFallingBackOnClasses(boolean fallingBackOnClasses) {
             this.fallingBackOnClasses = fallingBackOnClasses;
         }
 
-        public boolean isIncludingMetaAnnotations() {
+        boolean isIncludingMetaAnnotations() {
             return includingMetaAnnotations;
         }
 
-        public void setIncludingMetaAnnotations(boolean includingMetaAnnotations) {
+        void setIncludingMetaAnnotations(boolean includingMetaAnnotations) {
             this.includingMetaAnnotations = includingMetaAnnotations;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Context context = (Context) o;
+            return traversingInterfaces == context.traversingInterfaces &&
+                    traversingSuperclasses == context.traversingSuperclasses &&
+                    traversingOverriddenMembers == context.traversingOverriddenMembers &&
+                    fallingBackOnClasses == context.fallingBackOnClasses &&
+                    includingMetaAnnotations == context.includingMetaAnnotations &&
+                    Objects.equals(annotatedElement, context.annotatedElement);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(annotatedElement, traversingInterfaces, traversingSuperclasses, traversingOverriddenMembers, fallingBackOnClasses, includingMetaAnnotations);
         }
     }
 }

@@ -7,16 +7,24 @@
  */
 package org.seedstack.shed.reflect;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Function;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 public final class Classes {
+    private static ConcurrentMap<Context, List<Class<?>>> cache = new ConcurrentHashMap<>(1024);
+
     private Classes() {
         // no instantiation allowed
     }
@@ -47,14 +55,19 @@ public final class Classes {
     }
 
     public static class End {
-        protected final Context context;
+        final Context context;
 
-        public End(Context context) {
+        End(Context context) {
             this.context = context;
         }
 
+        @SuppressFBWarnings(value = "RV_RETURN_VALUE_OF_PUTIFABSENT_IGNORED", justification = "using putIfAbsent for concurrency")
         public Stream<Class<?>> classes() {
-            return gather(context.getStartingClass());
+            List<Class<?>> classes = cache.get(context);
+            if (classes == null) {
+                cache.putIfAbsent(context, classes = gather(context.getStartingClass(), new ArrayList<>(32)));
+            }
+            return classes.stream();
         }
 
         public Stream<Constructor<?>> constructors() {
@@ -69,29 +82,31 @@ public final class Classes {
             return classes().map(Class::getDeclaredFields).flatMap(Arrays::stream);
         }
 
-        private Stream<Class<?>> gather(Class<?>... classes) {
-            Stream.Builder<Stream<Class<?>>> builder = Stream.builder();
-            for (Class<?> clazz : classes) {
-                builder.add(Stream.of(clazz));
-                if (context.isIncludeClasses()) {
-                    Class<?> superclass = clazz.getSuperclass();
-                    if (superclass != null && superclass != Object.class) {
-                        builder.add(gather(superclass).filter(context.getPredicate()));
-                    }
-                }
-                if (context.isIncludeInterfaces()) {
-                    Class<?>[] interfaces = clazz.getInterfaces();
-                    if (interfaces.length > 0) {
-                        builder.add(gather(interfaces).filter(context.getPredicate()));
+        private List<Class<?>> gather(Class<?> aClass, List<Class<?>> list) {
+            list.add(aClass);
+            if (context.isIncludeInterfaces()) {
+                for (Class<?> anInterface : aClass.getInterfaces()) {
+                    Predicate<Class<?>> predicate = context.getPredicate();
+                    if (predicate == null || predicate.test(anInterface)) {
+                        gather(anInterface, list);
                     }
                 }
             }
-            return builder.build().flatMap(Function.identity());
+            if (context.isIncludeClasses()) {
+                Class<?> superclass = aClass.getSuperclass();
+                if (superclass != null && superclass != Object.class) {
+                    Predicate<Class<?>> predicate = context.getPredicate();
+                    if (predicate == null || predicate.test(superclass)) {
+                        gather(superclass, list);
+                    }
+                }
+            }
+            return list;
         }
     }
 
     public static class FromClass extends End {
-        public FromClass(Context context) {
+        FromClass(Context context) {
             super(context);
         }
 
@@ -115,40 +130,54 @@ public final class Classes {
         private final Class<?> startingClass;
         private boolean includeInterfaces = false;
         private boolean includeClasses = false;
-        private Predicate<Class<?>> predicate = (someClass) -> true;
+        private Predicate<Class<?>> predicate;
 
         private Context(Class<?> startingClass) {
             this.startingClass = startingClass;
         }
 
-        public Class<?> getStartingClass() {
+        Class<?> getStartingClass() {
             return startingClass;
         }
 
-        public boolean isIncludeInterfaces() {
+        boolean isIncludeInterfaces() {
             return includeInterfaces;
         }
 
-        public Context setIncludeInterfaces(boolean includeInterfaces) {
+        void setIncludeInterfaces(boolean includeInterfaces) {
             this.includeInterfaces = includeInterfaces;
-            return this;
         }
 
-        public boolean isIncludeClasses() {
+        boolean isIncludeClasses() {
             return includeClasses;
         }
 
-        public Context setIncludeClasses(boolean includeClasses) {
+        void setIncludeClasses(boolean includeClasses) {
             this.includeClasses = includeClasses;
-            return this;
         }
 
-        public Predicate<Class<?>> getPredicate() {
+        Predicate<Class<?>> getPredicate() {
             return predicate;
         }
 
-        public void setPredicate(Predicate<Class<?>> predicate) {
+        void setPredicate(Predicate<Class<?>> predicate) {
             this.predicate = predicate;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Context context = (Context) o;
+            return includeInterfaces == context.includeInterfaces &&
+                    includeClasses == context.includeClasses &&
+                    Objects.equals(startingClass, context.startingClass) &&
+                    Objects.equals(predicate, context.predicate);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(startingClass, includeInterfaces, includeClasses, predicate);
         }
     }
 }
