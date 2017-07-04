@@ -37,14 +37,13 @@
                             <excludes>
                                 <!-- Predicate and Function interfaces have been pulled up in AnnotationResolver -->
                                 <exclude>org.seedstack.shed.reflect.StandardAnnotationResolver</exclude>
+                                <!-- Made some constructors/fields private -->
+                                <exclude>org.seedstack.shed.reflect.Annotations*</exclude>
+                                <!-- Made some constructors/fields private -->
+                                <exclude>org.seedstack.shed.reflect.Classes*</exclude>
                             </excludes>
                         </parameter>
                     </configuration>
-                </plugin>
-                <plugin>
-                    <groupId>org.seedstack</groupId>
-                    <artifactId>seedstack-maven-plugin</artifactId>
-                    <version>2.4.3</version>
                 </plugin>
             </plugins>
         </pluginManagement>
