@@ -23,7 +23,7 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 public final class Classes {
-    private static ConcurrentMap<Context, List<Class<?>>> cache = new ConcurrentHashMap<>(1024);
+    private static ConcurrentMap<Context, List<Class<?>>> classesCache = new ConcurrentHashMap<>(1024);
 
     private Classes() {
         // no instantiation allowed
@@ -63,9 +63,9 @@ public final class Classes {
 
         @SuppressFBWarnings(value = "RV_RETURN_VALUE_OF_PUTIFABSENT_IGNORED", justification = "using putIfAbsent for concurrency")
         public Stream<Class<?>> classes() {
-            List<Class<?>> classes = cache.get(context);
+            List<Class<?>> classes = classesCache.get(context);
             if (classes == null) {
-                cache.putIfAbsent(context, classes = gather(context.getStartingClass(), new ArrayList<>(32)));
+                classesCache.putIfAbsent(context, classes = gather(context.getStartingClass(), new ArrayList<>(32)));
             }
             return classes.stream();
         }
@@ -74,12 +74,30 @@ public final class Classes {
             return classes().map(Class::getDeclaredConstructors).flatMap(Arrays::stream);
         }
 
+        public Optional<? extends Constructor<?>> constructor(Class<?>... parameterTypes) {
+            return constructors()
+                    .filter(constructor -> Arrays.equals(constructor.getParameterTypes(), parameterTypes))
+                    .findFirst();
+        }
+
         public Stream<Method> methods() {
             return classes().map(Class::getDeclaredMethods).flatMap(Arrays::stream);
         }
 
+        public Optional<Method> method(String name, Class<?>... parameterTypes) {
+            return methods()
+                    .filter(method -> method.getName().equals(name) && Arrays.equals(method.getParameterTypes(), parameterTypes))
+                    .findFirst();
+        }
+
         public Stream<Field> fields() {
             return classes().map(Class::getDeclaredFields).flatMap(Arrays::stream);
+        }
+
+        public Optional<Field> field(String name) {
+            return fields()
+                    .filter(field -> field.getName().equals(name))
+                    .findFirst();
         }
 
         private List<Class<?>> gather(Class<?> aClass, List<Class<?>> list) {

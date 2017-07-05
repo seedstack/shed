@@ -32,12 +32,21 @@ public class ClassesBenchmark {
     }
 
     @Benchmark
-    public void findSpecificField() {
+    public void findSpecificFieldByFilter() {
         Classes.from(SubClass.class)
                 .traversingSuperclasses()
                 .fields()
                 .filter(field -> "baseClassField".equals(field.getName()))
-                .findFirst();
+                .findFirst()
+                .get();
+    }
+
+    @Benchmark
+    public void findSpecificFieldByName() throws NoSuchFieldException {
+        Classes.from(SubClass.class)
+                .traversingSuperclasses()
+                .field("baseClassField")
+                .get();
     }
 
     interface SomeInterface {
