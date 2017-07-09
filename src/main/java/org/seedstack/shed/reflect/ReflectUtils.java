@@ -30,9 +30,10 @@ public final class ReflectUtils {
         return accessibleObject;
     }
 
-    public static Object invoke(Method method, Object self, Object... args) {
+    @SuppressWarnings("unchecked")
+    public static <T> T invoke(Method method, Object self, Object... args) {
         try {
-            return method.invoke(self, args);
+            return (T) method.invoke(self, args);
         } catch (IllegalAccessException | InvocationTargetException e) {
             throw ShedException.wrap(e, ShedErrorCode.UNABLE_TO_INVOKE_METHOD)
                     .put("method", method.toGenericString());
@@ -48,9 +49,10 @@ public final class ReflectUtils {
         }
     }
 
-    public static Object getValue(Field field, Object self) {
+    @SuppressWarnings("unchecked")
+    public static <T> T getValue(Field field, Object self) {
         try {
-            return field.get(self);
+            return (T) field.get(self);
         } catch (IllegalAccessException e) {
             throw ShedException.wrap(e, ShedErrorCode.UNABLE_TO_GET_FIELD)
                     .put("field", field.toGenericString());

@@ -33,12 +33,12 @@ public class ReflectUtilsTest {
     @Test
     public void testGetValue() throws Exception {
         simpleField = "someValue";
-        assertThat(getValue(makeAccessible(ReflectUtilsTest.class.getDeclaredField("simpleField")), this)).isEqualTo("someValue");
+        assertThat((String) getValue(makeAccessible(ReflectUtilsTest.class.getDeclaredField("simpleField")), this)).isEqualTo("someValue");
     }
 
     @Test
     public void testInvoke() throws Exception {
-        assertThat(invoke(makeAccessible(ReflectUtilsTest.class.getDeclaredMethod("someMethod", String.class, String.class)), this, "a", "b")).isEqualTo("ab");
+        assertThat((String) invoke(makeAccessible(ReflectUtilsTest.class.getDeclaredMethod("someMethod", String.class, String.class)), this, "a", "b")).isEqualTo("ab");
     }
 
     private String someMethod(String arg1, String arg2) {
