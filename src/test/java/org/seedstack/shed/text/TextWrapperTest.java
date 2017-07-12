@@ -31,12 +31,22 @@ public class TextWrapperTest {
     }
 
     @Test
-    public void longWordWrap() throws Exception {
+    public void longWordWrapStrictMode() throws Exception {
+        String longWord = "abcdefghijklmnopqrstuvwxyz----abcdefghijklmnopqrstuvwxyz----abcdefghijklmnopqrstuvwxyz----abcdefghijklmnopqrstuvwxyz----abcdefghijklmnopqrstuvwxyz----";
+        String wrapped = new TextWrapper(TextWrapper.DEFAULT_WIDTH, TextWrapper.DEFAULT_CONTINUATION, true).wrap(longWord);
+        for (String line : wrapped.split("\n")) {
+            assertThat(line.length()).isLessThanOrEqualTo(80);
+        }
+        assertThat(wrapped).contains("—");
+    }
+
+    @Test
+    public void longWordWrapLaxMode() throws Exception {
         String longWord = "abcdefghijklmnopqrstuvwxyz----abcdefghijklmnopqrstuvwxyz----abcdefghijklmnopqrstuvwxyz----abcdefghijklmnopqrstuvwxyz----abcdefghijklmnopqrstuvwxyz----";
         String wrapped = new TextWrapper().wrap(longWord);
         for (String line : wrapped.split("\n")) {
-            assertThat(line.length()).isLessThanOrEqualTo(120);
+            assertThat(line.length()).isEqualTo(longWord.length());
         }
-        assertThat(wrapped).contains("—");
+        assertThat(wrapped).doesNotContain("—");
     }
 }

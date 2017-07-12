@@ -12,11 +12,12 @@ package org.seedstack.shed.text;
  * a long word doesn't fit on one line and must be broken apart.
  */
 public class TextWrapper {
+    public static final String DEFAULT_CONTINUATION = "—";
+    public static final int DEFAULT_WIDTH = 80;
     private static final String LINE_SEPARATOR = "\n";
-    private static final int DEFAULT_WIDTH = 120;
-    private static final String DEFAULT_CONTINUATION = "—";
     private final int width;
     private final String continuation;
+    private final boolean strict;
 
     public TextWrapper() {
         this(DEFAULT_WIDTH);
@@ -27,8 +28,13 @@ public class TextWrapper {
     }
 
     public TextWrapper(int width, String continuation) {
+        this(width, DEFAULT_CONTINUATION, false);
+    }
+
+    public TextWrapper(int width, String continuation, boolean strict) {
         this.width = width;
         this.continuation = continuation;
+        this.strict = strict;
     }
 
     public String wrap(String text) {
@@ -54,7 +60,7 @@ public class TextWrapper {
                     currentPosition = 0;
                 }
 
-                if (wordLength > width) {
+                if (wordLength > width && strict) {
                     int i = 0;
                     while (i + width < wordLength) {
                         sb.append(word.substring(i, width - continuationLength)).append(continuation).append(LINE_SEPARATOR);

@@ -11,8 +11,12 @@ import org.seedstack.shed.text.TextTemplate;
 import org.seedstack.shed.text.TextUtils;
 import org.seedstack.shed.text.TextWrapper;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -36,7 +40,7 @@ public abstract class BaseException extends RuntimeException {
     private static final String PRINT_STACK_TRACE = "printStackTrace";
     private static final String CONSTRUCTOR = "<init>";
     private static final String COM_GOOGLE_INJECT_INTERNAL_ERRORS = "com.google.inject.internal.Errors";
-    private static final TextWrapper textWrapper = new TextWrapper();
+    private static final TextWrapper textWrapper = new TextWrapper(120);
 
     private final ErrorCode errorCode;
     private final Map<String, Object> properties = new HashMap<>();
@@ -266,23 +270,24 @@ public abstract class BaseException extends RuntimeException {
             String causeMessage;
             if (theCause instanceof BaseException) {
                 BaseException seedCause = (BaseException) theCause;
+                Map<String, Object> processedProperties = processProperties(seedCause.getProperties());
 
                 // Find the fix at lowest depth
                 String fixTemplate = seedCause.getTemplate("fix");
                 if (fixTemplate != null) {
-                    fix = new TextTemplate(fixTemplate).render(seedCause.getProperties());
+                    fix = new TextTemplate(fixTemplate).render(processedProperties);
                 }
 
                 // Also get the url
                 String urlTemplate = seedCause.getTemplate("url");
                 if (urlTemplate != null) {
-                    url = new TextTemplate(urlTemplate).render(seedCause.getProperties());
+                    url = new TextTemplate(urlTemplate).render(processedProperties);
                 }
 
                 // Collects all cause messages from highest to lowest level
                 String seedCauseErrorTemplate = seedCause.getTemplate(null);
                 if (seedCauseErrorTemplate != null) {
-                    causeMessage = String.format(ERROR_CODE_PATTERN, formatErrorClass(seedCause.getErrorCode()), new TextTemplate(seedCauseErrorTemplate).render(seedCause.getProperties()));
+                    causeMessage = String.format(ERROR_CODE_PATTERN, formatErrorClass(seedCause.getErrorCode()), new TextTemplate(seedCauseErrorTemplate).render(processedProperties));
                 } else {
                     causeMessage = seedCause.getMessage();
                 }
@@ -303,25 +308,56 @@ public abstract class BaseException extends RuntimeException {
             theCause = theCause.getCause();
         }
 
+        Map<String, Object> processedProperties = processProperties(getProperties());
+
         if (message == null) {
             String messageTemplate = getTemplate(null);
             if (messageTemplate != null) {
-                message = new TextTemplate(messageTemplate).render(getProperties());
+                message = new TextTemplate(messageTemplate).render(processedProperties);
             }
         }
 
         if (fix == null) {
             String fixTemplate = getTemplate("fix");
             if (fixTemplate != null) {
-                fix = new TextTemplate(fixTemplate).render(getProperties());
+                fix = new TextTemplate(fixTemplate).render(processedProperties);
             }
         }
 
         if (url == null) {
             String urlTemplate = getTemplate("url");
             if (urlTemplate != null) {
-                url = new TextTemplate(urlTemplate).render(getProperties());
+                url = new TextTemplate(urlTemplate).render(processedProperties);
             }
+        }
+    }
+
+    private Map<String, Object> processProperties(Map<String, Object> properties) {
+        Map<String, Object> processedProperties = new HashMap<>();
+        for (Map.Entry<String, Object> entry : properties.entrySet()) {
+            Object value = entry.getValue();
+            if (value instanceof Class<?>) {
+                if (Annotation.class.isAssignableFrom(((Class) value))) {
+                    processedProperties.put(entry.getKey(), "@" + ((Class) value).getSimpleName());
+                } else {
+                    processedProperties.put(entry.getKey(), getSourceLocation((Class) value, false));
+                }
+            } else if (value instanceof Method) {
+                processedProperties.put(entry.getKey(), ((Method) value).getName() + (((Method) value).getParameters().length > 0 ? "(...)" : "()"));
+            } else if (value instanceof Field) {
+                processedProperties.put(entry.getKey(), ((Field) value).getName());
+            } else {
+                processedProperties.put(entry.getKey(), String.valueOf(entry.getValue()));
+            }
+        }
+        return processedProperties;
+    }
+
+    private String getSourceLocation(Class aClass, boolean simple) {
+        if (aClass.getDeclaringClass() == null && Modifier.isPublic(aClass.getModifiers())) {
+            return (simple ? "." + aClass.getSimpleName() : aClass.getName()) + "(" + aClass.getSimpleName() + ".java" + ":1)";
+        } else {
+            return simple ? aClass.getSimpleName() : aClass.getName();
         }
     }
 
