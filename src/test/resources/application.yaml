@@ -9,6 +9,6 @@
 jmh:
   mode: Throughput
   warmup:
-    iterations: 3
+    iterations: 2
   measurement:
-    iterations: 5
+    iterations: 2

@@ -68,13 +68,36 @@ public class ClassesTest {
     }
 
     @Test
-    public void filterClasses() throws Exception {
-        assertThat(Classes.from(SubClass.class)
-                .traversingSuperclasses()
-                .traversingInterfaces()
-                .filteredBy(theClass -> theClass.getSimpleName().startsWith("SomeOther"))
-                .classes()
-        ).containsExactly(SubClass.class, SomeOtherInterface.class);
+    public void instantiatePrimitiveTypes() throws Exception {
+        assertThat(Classes.instantiateDefault(int.class)).isEqualTo(0);
+        assertThat(Classes.instantiateDefault(boolean.class)).isFalse();
+        assertThat(Classes.instantiateDefault(int.class)).isEqualTo(0);
+        assertThat(Classes.instantiateDefault(long.class)).isEqualTo(0L);
+        assertThat(Classes.instantiateDefault(short.class)).isEqualTo((short) 0);
+        assertThat(Classes.instantiateDefault(float.class)).isEqualTo(0f);
+        assertThat(Classes.instantiateDefault(double.class)).isEqualTo(0d);
+        assertThat(Classes.instantiateDefault(byte.class)).isEqualTo((byte) 0);
+        assertThat(Classes.instantiateDefault(char.class)).isEqualTo((char) 0);
+    }
+
+    @Test
+    public void instantiateBoxedTypes() throws Exception {
+        assertThat(Classes.instantiateDefault(Integer.class)).isEqualTo(0);
+        assertThat(Classes.instantiateDefault(Boolean.class)).isFalse();
+        assertThat(Classes.instantiateDefault(Integer.class)).isEqualTo(0);
+        assertThat(Classes.instantiateDefault(Long.class)).isEqualTo(0L);
+        assertThat(Classes.instantiateDefault(Short.class)).isEqualTo((short) 0);
+        assertThat(Classes.instantiateDefault(Float.class)).isEqualTo(0f);
+        assertThat(Classes.instantiateDefault(Double.class)).isEqualTo(0d);
+        assertThat(Classes.instantiateDefault(Byte.class)).isEqualTo((byte) 0);
+        assertThat(Classes.instantiateDefault(Character.class)).isEqualTo((char) 0);
+    }
+
+    @Test
+    public void instantiateArrays() throws Exception {
+        assertThat(Classes.instantiateDefault(Integer[].class)).isEqualTo(new Integer[0]);
+        assertThat(Classes.instantiateDefault(int[].class)).isEqualTo(new int[0]);
+        assertThat(Classes.instantiateDefault(String[].class)).isEqualTo(new String[0]);
     }
 
     interface SomeInterface {

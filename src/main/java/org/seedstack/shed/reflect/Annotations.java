@@ -17,7 +17,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -25,6 +24,7 @@ import java.util.stream.Stream;
 
 public final class Annotations {
     private static final String JAVA_LANG = "java.lang";
+    // This is an unbounded cache
     private static ConcurrentMap<Context, List<Annotation>> cache = new ConcurrentHashMap<>(1024);
 
     private Annotations() {
@@ -188,13 +188,14 @@ public final class Annotations {
         }
     }
 
-    private static class Context {
+    private final static class Context {
         private final AnnotatedElement annotatedElement;
         private boolean traversingInterfaces = false;
         private boolean traversingSuperclasses = false;
         private boolean traversingOverriddenMembers = false;
         private boolean fallingBackOnClasses = false;
         private boolean includingMetaAnnotations = false;
+        private int hashCode;
 
         private Context(AnnotatedElement annotatedElement) {
             this.annotatedElement = annotatedElement;
@@ -247,19 +248,31 @@ public final class Annotations {
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (o == null || Context.class != o.getClass()) return false;
+
             Context context = (Context) o;
-            return traversingInterfaces == context.traversingInterfaces &&
-                    traversingSuperclasses == context.traversingSuperclasses &&
-                    traversingOverriddenMembers == context.traversingOverriddenMembers &&
-                    fallingBackOnClasses == context.fallingBackOnClasses &&
-                    includingMetaAnnotations == context.includingMetaAnnotations &&
-                    Objects.equals(annotatedElement, context.annotatedElement);
+
+            if (traversingInterfaces != context.traversingInterfaces) return false;
+            if (traversingSuperclasses != context.traversingSuperclasses) return false;
+            if (traversingOverriddenMembers != context.traversingOverriddenMembers) return false;
+            if (fallingBackOnClasses != context.fallingBackOnClasses) return false;
+            if (includingMetaAnnotations != context.includingMetaAnnotations) return false;
+            return annotatedElement.equals(context.annotatedElement);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(annotatedElement, traversingInterfaces, traversingSuperclasses, traversingOverriddenMembers, fallingBackOnClasses, includingMetaAnnotations);
+            int result = hashCode;
+            if (result == 0) {
+                result = annotatedElement.hashCode();
+                result = 31 * result + (traversingInterfaces ? 1 : 0);
+                result = 31 * result + (traversingSuperclasses ? 1 : 0);
+                result = 31 * result + (traversingOverriddenMembers ? 1 : 0);
+                result = 31 * result + (fallingBackOnClasses ? 1 : 0);
+                result = 31 * result + (includingMetaAnnotations ? 1 : 0);
+                hashCode = result;
+            }
+            return result;
         }
     }
 }

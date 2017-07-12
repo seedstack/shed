@@ -8,21 +8,23 @@
 package org.seedstack.shed.reflect;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import org.seedstack.shed.internal.ShedErrorCode;
+import org.seedstack.shed.internal.ShedException;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 public final class Classes {
+    // This is an unbounded cache
     private static ConcurrentMap<Context, List<Class<?>>> classesCache = new ConcurrentHashMap<>(1024);
 
     private Classes() {
@@ -30,13 +32,46 @@ public final class Classes {
     }
 
     /**
-     * Define the starting point of class reflection.
+     * Instantiate a class by invoking its default constructor. If the specified class denotes an array, an empty array
+     * of the correct component type is created. If the specified class denotes a primitive, the primitive is created
+     * with its default value.
      *
-     * @param someClass the starting class for reflection operations.
-     * @return the DSL.
+     * @param someClass the class to instantiate.
+     * @param <T>       the type of the object to instantiate.
+     * @return the instantiated object.
      */
-    public static FromClass from(Class<?> someClass) {
-        return new FromClass(new Context(someClass));
+    @SuppressWarnings("unchecked")
+    public static <T> T instantiateDefault(Class<T> someClass) {
+        if (someClass.isArray()) {
+            return (T) Array.newInstance(someClass.getComponentType(), 0);
+        } else {
+            if (boolean.class.equals(someClass) || Boolean.class.equals(someClass)) {
+                return (T) Boolean.FALSE;
+            } else if (int.class.equals(someClass) || Integer.class.equals(someClass)) {
+                return (T) Integer.valueOf(0);
+            } else if (long.class.equals(someClass) || Long.class.equals(someClass)) {
+                return (T) Long.valueOf(0L);
+            } else if (short.class.equals(someClass) || Short.class.equals(someClass)) {
+                return (T) Short.valueOf((short) 0);
+            } else if (float.class.equals(someClass) || Float.class.equals(someClass)) {
+                return (T) Float.valueOf(0f);
+            } else if (double.class.equals(someClass) || Double.class.equals(someClass)) {
+                return (T) Double.valueOf(0d);
+            } else if (byte.class.equals(someClass) || Byte.class.equals(someClass)) {
+                return (T) Byte.valueOf((byte) 0);
+            } else if (char.class.equals(someClass) || Character.class.equals(someClass)) {
+                return (T) Character.valueOf((char) 0);
+            } else {
+                try {
+                    Constructor<T> defaultConstructor = someClass.getDeclaredConstructor();
+                    defaultConstructor.setAccessible(true);
+                    return defaultConstructor.newInstance();
+                } catch (Exception e) {
+                    throw ShedException.wrap(e, ShedErrorCode.UNABLE_TO_INSTANTIATE_CLASS)
+                            .put("class", someClass.getName());
+                }
+            }
+        }
     }
 
     /**
@@ -52,6 +87,16 @@ public final class Classes {
         } catch (ClassNotFoundException e) {
             return Optional.empty();
         }
+    }
+
+    /**
+     * Define the starting point of class reflection.
+     *
+     * @param someClass the starting class for reflection operations.
+     * @return the DSL.
+     */
+    public static FromClass from(Class<?> someClass) {
+        return new FromClass(new Context(someClass));
     }
 
     public static class End {
@@ -104,19 +149,13 @@ public final class Classes {
             list.add(aClass);
             if (context.isIncludeInterfaces()) {
                 for (Class<?> anInterface : aClass.getInterfaces()) {
-                    Predicate<Class<?>> predicate = context.getPredicate();
-                    if (predicate == null || predicate.test(anInterface)) {
-                        gather(anInterface, list);
-                    }
+                    gather(anInterface, list);
                 }
             }
             if (context.isIncludeClasses()) {
                 Class<?> superclass = aClass.getSuperclass();
                 if (superclass != null && superclass != Object.class) {
-                    Predicate<Class<?>> predicate = context.getPredicate();
-                    if (predicate == null || predicate.test(superclass)) {
-                        gather(superclass, list);
-                    }
+                    gather(superclass, list);
                 }
             }
             return list;
@@ -137,18 +176,13 @@ public final class Classes {
             context.setIncludeInterfaces(true);
             return this;
         }
-
-        public End filteredBy(Predicate<Class<?>> predicate) {
-            context.setPredicate(predicate);
-            return this;
-        }
     }
 
-    private static class Context {
+    private final static class Context {
         private final Class<?> startingClass;
         private boolean includeInterfaces = false;
         private boolean includeClasses = false;
-        private Predicate<Class<?>> predicate;
+        private int hashCode;
 
         private Context(Class<?> startingClass) {
             this.startingClass = startingClass;
@@ -174,28 +208,28 @@ public final class Classes {
             this.includeClasses = includeClasses;
         }
 
-        Predicate<Class<?>> getPredicate() {
-            return predicate;
-        }
-
-        void setPredicate(Predicate<Class<?>> predicate) {
-            this.predicate = predicate;
-        }
-
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (o == null || Context.class != o.getClass()) return false;
+
             Context context = (Context) o;
-            return includeInterfaces == context.includeInterfaces &&
-                    includeClasses == context.includeClasses &&
-                    Objects.equals(startingClass, context.startingClass) &&
-                    Objects.equals(predicate, context.predicate);
+
+            if (includeInterfaces != context.includeInterfaces) return false;
+            if (includeClasses != context.includeClasses) return false;
+            return startingClass == context.startingClass;
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(startingClass, includeInterfaces, includeClasses, predicate);
+            int result = hashCode;
+            if (result == 0) {
+                result = startingClass.hashCode();
+                result = 31 * result + (includeInterfaces ? 1 : 0);
+                result = 31 * result + (includeClasses ? 1 : 0);
+                hashCode = result;
+            }
+            return result;
         }
     }
 }

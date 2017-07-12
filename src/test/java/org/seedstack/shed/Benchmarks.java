@@ -5,13 +5,12 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package org.seedstack.shed.internal;
+package org.seedstack.shed;
 
-import org.seedstack.shed.exception.ErrorCode;
+import org.seedstack.seed.core.SeedMain;
 
-public enum ShedErrorCode implements ErrorCode {
-    UNABLE_TO_SET_FIELD,
-    UNABLE_TO_GET_FIELD,
-    UNABLE_TO_INSTANTIATE_CLASS,
-    UNABLE_TO_INVOKE_METHOD
+public class Benchmarks {
+    public static void main(String[] args) throws Exception {
+        SeedMain.getLauncher().launch(new String[0]);
+    }
 }
