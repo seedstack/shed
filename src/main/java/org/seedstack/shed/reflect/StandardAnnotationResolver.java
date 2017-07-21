@@ -15,14 +15,12 @@ import java.lang.reflect.Type;
 import java.util.Optional;
 
 public abstract class StandardAnnotationResolver<E extends AnnotatedElement, A extends Annotation> implements AnnotationResolver<E, A> {
-    private final Class<E> annotatedElementClass;
     private final Class<A> annotationClass;
 
     @SuppressWarnings("unchecked")
     protected StandardAnnotationResolver() {
         Type[] actualTypeArguments = ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments();
-        annotatedElementClass = (Class<E>) actualTypeArguments[0];
-        annotationClass = (Class<A>) actualTypeArguments[1];
+        annotationClass = (Class<A>) Types.rawClassOf(actualTypeArguments[1]);
     }
 
     @Override
@@ -37,10 +35,17 @@ public abstract class StandardAnnotationResolver<E extends AnnotatedElement, A e
 
     private Optional<A> resolveAnnotation(E element) {
         Annotations.OnAnnotatedElement on;
-        if (Executable.class.isAssignableFrom(annotatedElementClass)) {
+        if (element instanceof Class<?>) {
+            if (Annotation.class.isAssignableFrom((Class<?>) element)) {
+                // do not return annotated annotations
+                return Optional.empty();
+            } else {
+                on = Annotations.on(element);
+            }
+        } else if (element instanceof Executable) {
             on = Annotations.on(((Executable) element)).traversingOverriddenMembers();
         } else {
-            on = Annotations.on(element);
+            return Optional.empty();
         }
         return on.fallingBackOnClasses()
                 .includingMetaAnnotations()
