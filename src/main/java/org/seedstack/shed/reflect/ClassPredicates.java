@@ -53,6 +53,18 @@ public final class ClassPredicates {
      *
      * @return the predicate.
      */
+    public static Predicate<Class<?>> classImplements(Class<?> anInterface) {
+        if (!anInterface.isInterface()) {
+            throw new IllegalArgumentException("Class " + anInterface.getName() + " is not an interface");
+        }
+        return candidate -> candidate != null && !candidate.isInterface() && anInterface.isAssignableFrom(candidate);
+    }
+
+    /**
+     * Checks if a candidate class is an interface.
+     *
+     * @return the predicate.
+     */
     public static Predicate<Class<?>> classIsInterface() {
         return candidate -> candidate != null && candidate.isInterface();
     }
