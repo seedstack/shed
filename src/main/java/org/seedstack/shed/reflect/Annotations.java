@@ -8,6 +8,7 @@
 package org.seedstack.shed.reflect;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import org.seedstack.shed.cache.LRUCache;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
@@ -18,14 +19,11 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Stream;
 
 public final class Annotations {
     private static final String JAVA_LANG = "java.lang";
-    // This is an unbounded cache
-    private static ConcurrentMap<Context, List<Annotation>> cache = new ConcurrentHashMap<>(1024);
+    private static LRUCache<Context, List<Annotation>> cache = new LRUCache<>(1024);
 
     private Annotations() {
         // no instantiation allowed

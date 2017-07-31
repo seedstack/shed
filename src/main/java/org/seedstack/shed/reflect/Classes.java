@@ -10,6 +10,7 @@ package org.seedstack.shed.reflect;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.seedstack.shed.internal.ShedErrorCode;
 import org.seedstack.shed.internal.ShedException;
+import org.seedstack.shed.cache.LRUCache;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
@@ -19,13 +20,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Stream;
 
 public final class Classes {
-    // This is an unbounded cache
-    private static ConcurrentMap<Context, List<Class<?>>> classesCache = new ConcurrentHashMap<>(1024);
+    private static LRUCache<Context, List<Class<?>>> classesCache = new LRUCache<>(1024);
 
     private Classes() {
         // no instantiation allowed

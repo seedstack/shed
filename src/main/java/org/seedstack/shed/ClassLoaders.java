@@ -38,7 +38,7 @@ public final class ClassLoaders {
             classLoader = ClassLoader.getSystemClassLoader();
         }
 
-        // Throw an¬ exception if no classloader was found at all
+        // Throw an exception if no classloader was found at all
         if (classLoader == null) {
             throw new RuntimeException("Unable to find a classloader");
         }

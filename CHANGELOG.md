@@ -1,5 +1,7 @@
-# Version 1.1.0 (2017-07-??)
+# Version 1.1.0 (2017-07-31)
 
+* [new] Add no-dependency LRU cache.
+* [new] Add `classImplements` predicate.
 * [new] Add basic utilities for field/method reflection.
 * [new] Add the ability to create a default instance of a class.
 * [new] Add utilities to work with types.
