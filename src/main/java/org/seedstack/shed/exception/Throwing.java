@@ -19,16 +19,16 @@ public final class Throwing {
     }
 
     @FunctionalInterface
-    private interface Consumer<T> extends java.util.function.Consumer<T> {
+    public interface Consumer<T, X extends Throwable> extends java.util.function.Consumer<T> {
 
-        void apply(T t) throws Exception;
+        void apply(T t) throws X;
 
         @Override
         default void accept(T t) {
             try {
                 apply(t);
-            } catch (Exception e) {
-                throwException(e);
+            } catch (Throwable throwable) {
+                Throwing.throwException(throwable);
             }
         }
     }
