@@ -1,10 +1,11 @@
-/**
- * Copyright (c) 2013-2016, The SeedStack authors <http://seedstack.org>
+/*
+ * Copyright © 2013-2017, The SeedStack authors <http://seedstack.org>
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
+
 package org.seedstack.shed.reflect;
 
 import java.lang.annotation.Annotation;
@@ -14,12 +15,14 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Optional;
 
-public abstract class StandardAnnotationResolver<E extends AnnotatedElement, A extends Annotation> implements AnnotationResolver<E, A> {
+public abstract class StandardAnnotationResolver<E extends AnnotatedElement, A extends Annotation> implements
+        AnnotationResolver<E, A> {
     private final Class<A> annotationClass;
 
     @SuppressWarnings("unchecked")
     protected StandardAnnotationResolver() {
-        Type[] actualTypeArguments = ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments();
+        Type[] actualTypeArguments = ((ParameterizedType) getClass().getGenericSuperclass())
+                .getActualTypeArguments();
         annotationClass = (Class<A>) Types.rawClassOf(actualTypeArguments[1]);
     }
 

@@ -1,10 +1,11 @@
-/**
- * Copyright (c) 2013-2016, The SeedStack authors <http://seedstack.org>
+/*
+ * Copyright © 2013-2017, The SeedStack authors <http://seedstack.org>
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
+
 package org.seedstack.shed.reflect;
 
 import java.lang.reflect.Executable;
@@ -12,6 +13,7 @@ import java.lang.reflect.Method;
 import java.util.function.Predicate;
 
 public final class ExecutablePredicates {
+
     private ExecutablePredicates() {
         // no instantiation allowed
     }
@@ -52,17 +54,19 @@ public final class ExecutablePredicates {
      * @return the predicate.
      */
     public static <T extends Executable> Predicate<T> executableIsEquivalentTo(T reference) {
-        Predicate<T> predicate = candidate -> candidate != null &&
-                candidate.getName().equals(reference.getName()) &&
-                executableHasSameParameterTypesAs(reference).test(candidate);
+        Predicate<T> predicate = candidate -> candidate != null
+                && candidate.getName().equals(reference.getName())
+                && executableHasSameParameterTypesAs(reference).test(candidate);
         if (reference instanceof Method) {
-            predicate.and(candidate -> candidate instanceof Method && ((Method) candidate).getReturnType().equals(((Method) reference).getReturnType()));
+            predicate.and(candidate -> candidate instanceof Method && ((Method) candidate).getReturnType()
+                    .equals(((Method) reference).getReturnType()));
         }
         return predicate;
     }
 
     /**
-     * Checks if a candidate executable has the same parameter type as the specified reference executable.
+     * Checks if a candidate executable has the same parameter type as the specified reference
+     * executable.
      *
      * @param reference the executable to check parameters against.
      * @return the predicate.

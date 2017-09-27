@@ -1,15 +1,12 @@
-/**
- * Copyright (c) 2013-2016, The SeedStack authors <http://seedstack.org>
+/*
+ * Copyright © 2013-2017, The SeedStack authors <http://seedstack.org>
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package org.seedstack.shed.exception;
 
-import org.seedstack.shed.text.TextTemplate;
-import org.seedstack.shed.text.TextUtils;
-import org.seedstack.shed.text.TextWrapper;
+package org.seedstack.shed.exception;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
@@ -25,11 +22,14 @@ import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.seedstack.shed.text.TextTemplate;
+import org.seedstack.shed.text.TextUtils;
+import org.seedstack.shed.text.TextWrapper;
 
 /**
- * This is the base class for all technical SeedStack exceptions. It provides additional information over traditional
- * exception: detailed message, fix advice and online URL. Extra attributes can be added to the exception and used in
- * message templates.
+ * This is the base class for all technical SeedStack exceptions. It provides additional information
+ * over traditional exception: detailed message, fix advice and online URL. Extra attributes can be
+ * added to the exception and used in message templates.
  */
 public abstract class BaseException extends RuntimeException {
     private static final long serialVersionUID = 1L;
@@ -71,6 +71,67 @@ public abstract class BaseException extends RuntimeException {
     protected BaseException(ErrorCode errorCode, Throwable cause) {
         super(formatErrorCode(errorCode), cause);
         this.errorCode = errorCode;
+    }
+
+    private static String formatErrorCode(ErrorCode errorCode) {
+        String name = errorCode.toString()
+                .toLowerCase(Locale.ENGLISH)
+                .replace("_", " ");
+        return String.format(
+                ERROR_CODE_PATTERN,
+                formatErrorClass(errorCode),
+                name.substring(0, 1).toUpperCase(Locale.ENGLISH) + name.substring(1)
+        );
+    }
+
+    private static String formatErrorClass(ErrorCode errorCode) {
+        return errorCode.getClass().getSimpleName()
+                .replace("ErrorCodes", "")
+                .replace("ErrorCode", "")
+                .toUpperCase(Locale.ENGLISH);
+    }
+
+    /**
+     * Create a new subclass of BaseException from an {@link ErrorCode}.
+     *
+     * @param exceptionType the subclass of BaseException to create.
+     * @param errorCode     the error code to set.
+     * @param <E>           the subtype.
+     * @return the created BaseException.
+     */
+    public static <E extends BaseException> E createNew(Class<E> exceptionType, ErrorCode errorCode) {
+        try {
+            Constructor<E> constructor = exceptionType.getDeclaredConstructor(ErrorCode.class);
+            constructor.setAccessible(true);
+            return constructor.newInstance(errorCode);
+        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException
+                | InstantiationException e) {
+            throw new IllegalArgumentException(exceptionType.getCanonicalName()
+                    + " must implement a constructor with ErrorCode as parameter", e);
+        }
+    }
+
+    /**
+     * Wrap a subclass of BaseException with an {@link ErrorCode} around an existing {@link
+     * Throwable}.
+     *
+     * @param exceptionType the subclass of BaseException to create.
+     * @param throwable     the existing throwable to wrap.
+     * @param errorCode     the error code to set.
+     * @param <E>           the subtype.
+     * @return the created BaseException.
+     */
+    public static <E extends BaseException> E wrap(Class<E> exceptionType, Throwable throwable, ErrorCode errorCode) {
+        try {
+            Constructor<E> constructor = exceptionType
+                    .getDeclaredConstructor(ErrorCode.class, Throwable.class);
+            constructor.setAccessible(true);
+            return constructor.newInstance(errorCode, throwable);
+        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException
+                | InstantiationException e) {
+            throw new IllegalArgumentException(exceptionType.getCanonicalName()
+                    + " must implement a constructor with an ErrorCode and a Throwable as parameters", e);
+        }
     }
 
     /**
@@ -118,10 +179,11 @@ public abstract class BaseException extends RuntimeException {
     }
 
     /**
-     * The toString() method is overloaded to provide additional exception details. When invoked directly it only returns
-     * the details of this exception. When invoked from printStackTrace() it returns the details of this exception and
-     * flags all causes of BaseException type to only display their short message when their toString() method will be
-     * invoked by printStacktrace(). This uses a ThreadLocal implementation of the flag to stay thread-safe.
+     * The toString() method is overloaded to provide additional exception details. When invoked
+     * directly it only returns the details of this exception. When invoked from printStackTrace() it
+     * returns the details of this exception and flags all causes of BaseException type to only
+     * display their short message when their toString() method will be invoked by printStacktrace().
+     * This uses a ThreadLocal implementation of the flag to stay thread-safe.
      *
      * @return a textual representation of the exception.
      */
@@ -136,7 +198,8 @@ public abstract class BaseException extends RuntimeException {
         }
 
         if (location == 2) {
-            // if called from printStackTrace() we ensure that only the first BaseException is fully displayed
+            // if called from printStackTrace() we ensure that only the first BaseException is fully
+            // displayed
             try {
                 if (alreadyVisited.get()) {
                     // Already displayed in the cause list of the first BaseException
@@ -180,7 +243,8 @@ public abstract class BaseException extends RuntimeException {
             int count = 1;
             for (String seedCause : causes) {
                 ensureBlankLine(s);
-                s.append(String.format(MULTIPLE_CAUSES_PATTERN, count, TextUtils.leftPad(textWrapper.wrap(seedCause), "   ", 1)));
+                s.append(String.format(MULTIPLE_CAUSES_PATTERN, count,
+                        TextUtils.leftPad(textWrapper.wrap(seedCause), "   ", 1)));
                 count++;
             }
         }
@@ -225,9 +289,9 @@ public abstract class BaseException extends RuntimeException {
     }
 
     /**
-     * Provides a list describing the causes of this exception. This list is built by iterating through this exception
-     * causes and storing the description through {@link #getDescription()} if present or the message through {@link #getMessage()}
-     * as a fallback.
+     * Provides a list describing the causes of this exception. This list is built by iterating
+     * through this exception causes and storing the description through {@link #getDescription()} if
+     * present or the message through {@link #getMessage()} as a fallback.
      *
      * @return the list of causes, possibly empty.
      */
@@ -237,8 +301,8 @@ public abstract class BaseException extends RuntimeException {
     }
 
     /**
-     * Provides advice on how to fix the root cause of the exception. This fix is effectively extracted from the last
-     * cause available.
+     * Provides advice on how to fix the root cause of the exception. This fix is effectively
+     * extracted from the last cause available.
      *
      * @return the fix of the root cause or null if none exists.
      */
@@ -248,8 +312,8 @@ public abstract class BaseException extends RuntimeException {
     }
 
     /**
-     * Provides an URL to online information about the root cause of the exception. This URL is effectively extracted from the
-     * last cause available.
+     * Provides an URL to online information about the root cause of the exception. This URL is
+     * effectively extracted from the last cause available.
      *
      * @return the online information URL of the root cause or null if none exists.
      */
@@ -287,7 +351,9 @@ public abstract class BaseException extends RuntimeException {
                 // Collects all cause messages from highest to lowest level
                 String seedCauseErrorTemplate = seedCause.getTemplate(null);
                 if (seedCauseErrorTemplate != null) {
-                    causeMessage = String.format(ERROR_CODE_PATTERN, formatErrorClass(seedCause.getErrorCode()), new TextTemplate(seedCauseErrorTemplate).render(processedProperties));
+                    causeMessage = String
+                            .format(ERROR_CODE_PATTERN, formatErrorClass(seedCause.getErrorCode()),
+                                    new TextTemplate(seedCauseErrorTemplate).render(processedProperties));
                 } else {
                     causeMessage = seedCause.getMessage();
                 }
@@ -343,7 +409,9 @@ public abstract class BaseException extends RuntimeException {
                     processedProperties.put(entry.getKey(), getSourceLocation((Class) value, false));
                 }
             } else if (value instanceof Method) {
-                processedProperties.put(entry.getKey(), ((Method) value).getName() + (((Method) value).getParameters().length > 0 ? "(...)" : "()"));
+                processedProperties.put(entry.getKey(),
+                        ((Method) value).getName() + (((Method) value).getParameters().length > 0 ? "(...)"
+                                : "()"));
             } else if (value instanceof Field) {
                 processedProperties.put(entry.getKey(), ((Field) value).getName());
             } else {
@@ -353,11 +421,12 @@ public abstract class BaseException extends RuntimeException {
         return processedProperties;
     }
 
-    private String getSourceLocation(Class aClass, boolean simple) {
-        if (aClass.getDeclaringClass() == null && Modifier.isPublic(aClass.getModifiers())) {
-            return (simple ? "." + aClass.getSimpleName() : aClass.getName()) + "(" + aClass.getSimpleName() + ".java" + ":1)";
+    private String getSourceLocation(Class someClass, boolean simple) {
+        if (someClass.getDeclaringClass() == null && Modifier.isPublic(someClass.getModifiers())) {
+            return (simple ? "." + someClass.getSimpleName() : someClass.getName()) + "(" + someClass
+                    .getSimpleName() + ".java" + ":1)";
         } else {
-            return simple ? aClass.getSimpleName() : aClass.getName();
+            return simple ? someClass.getSimpleName() : someClass.getName();
         }
     }
 
@@ -383,11 +452,13 @@ public abstract class BaseException extends RuntimeException {
     private int getLocation() {
         for (StackTraceElement stackTraceElement : Thread.currentThread().getStackTrace()) {
             // In Throwable constructor
-            if (JAVA_LANG_THROWABLE.equals(stackTraceElement.getClassName()) && CONSTRUCTOR.equals(stackTraceElement.getMethodName())) {
+            if (JAVA_LANG_THROWABLE.equals(stackTraceElement.getClassName()) && CONSTRUCTOR
+                    .equals(stackTraceElement.getMethodName())) {
                 return 1;
             }
             // In Throwable printStackTrace
-            if (JAVA_LANG_THROWABLE.equals(stackTraceElement.getClassName()) && PRINT_STACK_TRACE.equals(stackTraceElement.getMethodName())) {
+            if (JAVA_LANG_THROWABLE.equals(stackTraceElement.getClassName()) && PRINT_STACK_TRACE
+                    .equals(stackTraceElement.getMethodName())) {
                 return 2;
             }
             // In a Guice verbose exception
@@ -397,60 +468,5 @@ public abstract class BaseException extends RuntimeException {
         }
         // Elsewhere
         return 0;
-    }
-
-    private static String formatErrorCode(ErrorCode errorCode) {
-        String name = errorCode.toString()
-                .toLowerCase(Locale.ENGLISH)
-                .replace("_", " ");
-        return String.format(
-                ERROR_CODE_PATTERN,
-                formatErrorClass(errorCode),
-                name.substring(0, 1).toUpperCase(Locale.ENGLISH) + name.substring(1)
-        );
-    }
-
-    private static String formatErrorClass(ErrorCode errorCode) {
-        return errorCode.getClass().getSimpleName()
-                .replace("ErrorCodes", "")
-                .replace("ErrorCode", "")
-                .toUpperCase(Locale.ENGLISH);
-    }
-
-    /**
-     * Create a new subclass of BaseException from an {@link ErrorCode}.
-     *
-     * @param exceptionType the subclass of BaseException to create.
-     * @param errorCode     the error code to set.
-     * @param <E>           the subtype.
-     * @return the created BaseException.
-     */
-    public static <E extends BaseException> E createNew(Class<E> exceptionType, ErrorCode errorCode) {
-        try {
-            Constructor<E> constructor = exceptionType.getDeclaredConstructor(ErrorCode.class);
-            constructor.setAccessible(true);
-            return constructor.newInstance(errorCode);
-        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException | InstantiationException e) {
-            throw new IllegalArgumentException(exceptionType.getCanonicalName() + " must implement a constructor with ErrorCode as parameter", e);
-        }
-    }
-
-    /**
-     * Wrap a subclass of BaseException with an {@link ErrorCode} around an existing {@link Throwable}.
-     *
-     * @param exceptionType the subclass of BaseException to create.
-     * @param throwable     the existing throwable to wrap.
-     * @param errorCode     the error code to set.
-     * @param <E>           the subtype.
-     * @return the created BaseException.
-     */
-    public static <E extends BaseException> E wrap(Class<E> exceptionType, Throwable throwable, ErrorCode errorCode) {
-        try {
-            Constructor<E> constructor = exceptionType.getDeclaredConstructor(ErrorCode.class, Throwable.class);
-            constructor.setAccessible(true);
-            return constructor.newInstance(errorCode, throwable);
-        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException | InstantiationException e) {
-            throw new IllegalArgumentException(exceptionType.getCanonicalName() + " must implement a constructor with an ErrorCode and a Throwable as parameters", e);
-        }
     }
 }

@@ -1,10 +1,11 @@
-/**
- * Copyright (c) 2013-2016, The SeedStack authors <http://seedstack.org>
+/*
+ * Copyright © 2013-2017, The SeedStack authors <http://seedstack.org>
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
+
 package org.seedstack.shed.text;
 
 import java.util.Map;
@@ -21,6 +22,12 @@ public class TextTemplate {
         this.template = template;
     }
 
+    /**
+     * Render the template with the placeholder replaced.
+     *
+     * @param replacements the replacements to use for placeholders.
+     * @return the rendered text.
+     */
     public String render(Map<String, Object> replacements) {
         Pattern pattern = Pattern.compile("\\$\\{(.+?)\\}");
         Matcher matcher = pattern.matcher(template);

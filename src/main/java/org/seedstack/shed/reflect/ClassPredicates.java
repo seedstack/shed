@@ -1,13 +1,12 @@
-/**
- * Copyright (c) 2013-2016, The SeedStack authors <http://seedstack.org>
+/*
+ * Copyright © 2013-2017, The SeedStack authors <http://seedstack.org>
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package org.seedstack.shed.reflect;
 
-import org.seedstack.shed.reflect.Classes;
+package org.seedstack.shed.reflect;
 
 import java.lang.reflect.Executable;
 import java.lang.reflect.Modifier;
@@ -39,13 +38,15 @@ public final class ClassPredicates {
     }
 
     /**
-     * Check if a candidate class is strictly a descendant of the specified class (not the specified class itself).
+     * Check if a candidate class is strictly a descendant of the specified class (not the
+     * specified class itself).
      *
      * @param ancestor the ancestor class to check for.
      * @return the predicate.
      */
     public static Predicate<Class<?>> classIsDescendantOf(Class<?> ancestor) {
-        return candidate -> candidate != null && candidate != ancestor && ancestor.isAssignableFrom(candidate);
+        return candidate -> candidate != null && candidate != ancestor && ancestor
+                .isAssignableFrom(candidate);
     }
 
     /**
@@ -57,7 +58,8 @@ public final class ClassPredicates {
         if (!anInterface.isInterface()) {
             throw new IllegalArgumentException("Class " + anInterface.getName() + " is not an interface");
         }
-        return candidate -> candidate != null && !candidate.isInterface() && anInterface.isAssignableFrom(candidate);
+        return candidate -> candidate != null && !candidate.isInterface() && anInterface
+                .isAssignableFrom(candidate);
     }
 
     /**

@@ -1,14 +1,12 @@
-/**
- * Copyright (c) 2013-2016, The SeedStack authors <http://seedstack.org>
+/*
+ * Copyright © 2013-2017, The SeedStack authors <http://seedstack.org>
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package org.seedstack.shed.reflect;
 
-import org.seedstack.shed.reflect.Annotations;
-import org.seedstack.shed.reflect.Classes;
+package org.seedstack.shed.reflect;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
@@ -26,7 +24,8 @@ public final class AnnotationPredicates {
      * @param includeMetaAnnotations if true, meta-annotations are included in the search.
      * @return the predicate.
      */
-    public static <T extends AnnotatedElement> Predicate<T> elementAnnotatedWith(Class<? extends Annotation> annotationClass, boolean includeMetaAnnotations) {
+    public static <T extends AnnotatedElement> Predicate<T> elementAnnotatedWith(Class<? extends Annotation>
+            annotationClass, boolean includeMetaAnnotations) {
         return candidate -> {
             if (candidate == null) {
                 return false;
@@ -46,18 +45,22 @@ public final class AnnotationPredicates {
      * @param includeMetaAnnotations if true, meta-annotations are included in the search.
      * @return the predicate.
      */
-    public static <T extends Annotation> Predicate<T> annotationAnnotatedWith(Class<? extends Annotation> annotationClass, boolean includeMetaAnnotations) {
-        return candidate -> elementAnnotatedWith(annotationClass, includeMetaAnnotations).test(candidate.annotationType());
+    public static <T extends Annotation> Predicate<T> annotationAnnotatedWith(Class<? extends Annotation>
+            annotationClass, boolean includeMetaAnnotations) {
+        return candidate -> elementAnnotatedWith(annotationClass, includeMetaAnnotations)
+                .test(candidate.annotationType());
     }
 
     /**
-     * Checks if the candidate or one of its superclasses or interfaces is annotated with the specified annotation.
+     * Checks if the candidate or one of its superclasses or interfaces is annotated with the
+     * specified annotation.
      *
      * @param annotationClass        the requested annotation
      * @param includeMetaAnnotations if true, meta-annotations are included in the search.
      * @return the predicate.
      */
-    public static Predicate<Class<?>> classOrAncestorAnnotatedWith(final Class<? extends Annotation> annotationClass, boolean includeMetaAnnotations) {
+    public static Predicate<Class<?>> classOrAncestorAnnotatedWith(final Class<? extends Annotation> annotationClass,
+            boolean includeMetaAnnotations) {
         return candidate -> candidate != null && Classes.from(candidate)
                 .traversingSuperclasses()
                 .traversingInterfaces()
@@ -76,13 +79,15 @@ public final class AnnotationPredicates {
     }
 
     /**
-     * Checks if the candidate or one of its superclasses has at least one field annotated or meta-annotated by the given annotation.
+     * Checks if the candidate or one of its superclasses has at least one field annotated or
+     * meta-annotated by the given annotation.
      *
      * @param annotationClass        the requested annotation
      * @param includeMetaAnnotations if true, meta-annotations are included in the search.
      * @return the predicate.
      */
-    public static Predicate<Class<?>> atLeastOneFieldAnnotatedWith(final Class<? extends Annotation> annotationClass, boolean includeMetaAnnotations) {
+    public static Predicate<Class<?>> atLeastOneFieldAnnotatedWith(final Class<? extends Annotation> annotationClass,
+            boolean includeMetaAnnotations) {
         return candidate -> candidate != null && Classes.from(candidate)
                 .traversingSuperclasses()
                 .fields()
@@ -90,14 +95,16 @@ public final class AnnotationPredicates {
     }
 
     /**
-     * Checks if the candidate or one of its superclasses or interfaces has at least one method annotated or meta-annotated
+     * Checks if the candidate or one of its superclasses or interfaces has at least one method
+     * annotated or meta-annotated
      * by the given annotation.
      *
      * @param annotationClass        the requested annotation
      * @param includeMetaAnnotations if true, meta-annotations are included in the search.
      * @return the predicate.
      */
-    public static Predicate<Class<?>> atLeastOneMethodAnnotatedWith(final Class<? extends Annotation> annotationClass, boolean includeMetaAnnotations) {
+    public static Predicate<Class<?>> atLeastOneMethodAnnotatedWith(final Class<? extends Annotation>
+            annotationClass, boolean includeMetaAnnotations) {
         return candidate -> Classes.from(candidate)
                 .traversingInterfaces()
                 .traversingSuperclasses()

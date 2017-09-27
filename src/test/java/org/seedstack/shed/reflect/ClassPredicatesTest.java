@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2013-2016, The SeedStack authors <http://seedstack.org>
+/*
+ * Copyright © 2013-2017, The SeedStack authors <http://seedstack.org>
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -8,7 +8,6 @@
 package org.seedstack.shed.reflect;
 
 import org.junit.Test;
-import org.seedstack.shed.reflect.ClassPredicates;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -22,28 +21,6 @@ import java.util.Collection;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 public class ClassPredicatesTest {
-    @Retention(RetentionPolicy.RUNTIME)
-    @Target({ElementType.ANNOTATION_TYPE})
-    private @interface SomeMetaAnnotation {
-    }
-
-    @Retention(RetentionPolicy.RUNTIME)
-    @Target({ElementType.TYPE, ElementType.FIELD, ElementType.METHOD, ElementType.CONSTRUCTOR})
-    @SomeMetaAnnotation
-    private @interface SomeAnnotation {
-    }
-
-    @SomeAnnotation
-    private static class AnnotatedElements {
-        @SomeAnnotation
-        private String someField;
-
-        @SomeAnnotation
-        private void someMethod() {
-
-        }
-    }
-
     @Test
     public void classIs() throws Exception {
         assertThat(ClassPredicates.classIs(SomeAnnotation.class).test(SomeAnnotation.class)).isTrue();
@@ -84,5 +61,27 @@ public class ClassPredicatesTest {
     public void atLeastOneConstructorIsPublic() throws Exception {
         assertThat(ClassPredicates.atLeastOneConstructorIsPublic().test(ClassPredicates.class)).isFalse();
         assertThat(ClassPredicates.atLeastOneConstructorIsPublic().test(String.class)).isTrue();
+    }
+
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ElementType.ANNOTATION_TYPE})
+    private @interface SomeMetaAnnotation {
+    }
+
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ElementType.TYPE, ElementType.FIELD, ElementType.METHOD, ElementType.CONSTRUCTOR})
+    @SomeMetaAnnotation
+    private @interface SomeAnnotation {
+    }
+
+    @SomeAnnotation
+    private static class AnnotatedElements {
+        @SomeAnnotation
+        private String someField;
+
+        @SomeAnnotation
+        private void someMethod() {
+
+        }
     }
 }

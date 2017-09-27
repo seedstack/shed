@@ -1,15 +1,14 @@
-/**
- * Copyright (c) 2013-2016, The SeedStack authors <http://seedstack.org>
+/*
+ * Copyright © 2013-2017, The SeedStack authors <http://seedstack.org>
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
+
 package org.seedstack.shed.reflect;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import org.seedstack.shed.cache.LRUCache;
-
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Constructor;
@@ -20,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
+import org.seedstack.shed.cache.LRUCache;
 
 public final class Annotations {
     private static final String JAVA_LANG = "java.lang";
@@ -69,10 +69,17 @@ public final class Annotations {
 
         @SuppressWarnings("unchecked")
         public <T extends Annotation> Optional<T> find(Class<T> annotationClass) {
-            return (Optional<T>) findAll().filter(AnnotationPredicates.annotationIsOfClass(annotationClass)).findFirst();
+            return (Optional<T>) findAll().filter(AnnotationPredicates.annotationIsOfClass(annotationClass))
+                    .findFirst();
         }
 
-        @SuppressFBWarnings(value = "RV_RETURN_VALUE_OF_PUTIFABSENT_IGNORED", justification = "using putIfAbsent for concurrency")
+        /**
+         * Returns a stream of all the annotations found.
+         *
+         * @return a stream of annotation objects.
+         */
+        @SuppressFBWarnings(value = "RV_RETURN_VALUE_OF_PUTIFABSENT_IGNORED", justification = "using "
+                + "putIfAbsent for concurrency")
         public Stream<Annotation> findAll() {
             List<Annotation> annotations = cache.get(context);
             if (annotations == null) {
@@ -99,7 +106,8 @@ public final class Annotations {
                             .traversingInterfaces()
                             .traversingSuperclasses()
                             .methods()
-                            .filter(ExecutablePredicates.executableIsEquivalentTo(((Method) startingAnnotatedElement)))
+                            .filter(ExecutablePredicates
+                                    .executableIsEquivalentTo(((Method) startingAnnotatedElement)))
                             .forEach(method -> {
                                 annotatedElements.add(method);
                                 if (context.isFallingBackOnClasses()) {
@@ -115,7 +123,8 @@ public final class Annotations {
                     Classes.from(((Constructor) startingAnnotatedElement).getDeclaringClass())
                             .traversingSuperclasses()
                             .constructors()
-                            .filter(ExecutablePredicates.executableIsEquivalentTo(((Constructor) startingAnnotatedElement)))
+                            .filter(ExecutablePredicates
+                                    .executableIsEquivalentTo(((Constructor) startingAnnotatedElement)))
                             .forEach(constructor -> {
                                 annotatedElements.add(constructor);
                                 if (context.isFallingBackOnClasses()) {
@@ -126,7 +135,8 @@ public final class Annotations {
             }
 
             for (AnnotatedElement annotatedElement : annotatedElements) {
-                if (annotatedElement instanceof Class<?> && (context.isTraversingInterfaces() || context.isTraversingSuperclasses())) {
+                if (annotatedElement instanceof Class<?> && (context.isTraversingInterfaces() || context
+                        .isTraversingSuperclasses())) {
                     Classes.FromClass from = Classes.from(((Class<?>) annotatedElement));
                     if (context.isTraversingInterfaces()) {
                         from.traversingInterfaces();
@@ -186,7 +196,7 @@ public final class Annotations {
         }
     }
 
-    private final static class Context {
+    private static final class Context {
         private final AnnotatedElement annotatedElement;
         private boolean traversingInterfaces = false;
         private boolean traversingSuperclasses = false;
@@ -245,16 +255,30 @@ public final class Annotations {
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || Context.class != o.getClass()) return false;
+            if (this == o) {
+                return true;
+            }
+            if (o == null || Context.class != o.getClass()) {
+                return false;
+            }
 
             Context context = (Context) o;
 
-            if (traversingInterfaces != context.traversingInterfaces) return false;
-            if (traversingSuperclasses != context.traversingSuperclasses) return false;
-            if (traversingOverriddenMembers != context.traversingOverriddenMembers) return false;
-            if (fallingBackOnClasses != context.fallingBackOnClasses) return false;
-            if (includingMetaAnnotations != context.includingMetaAnnotations) return false;
+            if (traversingInterfaces != context.traversingInterfaces) {
+                return false;
+            }
+            if (traversingSuperclasses != context.traversingSuperclasses) {
+                return false;
+            }
+            if (traversingOverriddenMembers != context.traversingOverriddenMembers) {
+                return false;
+            }
+            if (fallingBackOnClasses != context.fallingBackOnClasses) {
+                return false;
+            }
+            if (includingMetaAnnotations != context.includingMetaAnnotations) {
+                return false;
+            }
             return annotatedElement.equals(context.annotatedElement);
         }
 

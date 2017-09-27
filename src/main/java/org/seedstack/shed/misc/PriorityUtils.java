@@ -1,17 +1,18 @@
-/**
- * Copyright (c) 2013-2016, The SeedStack authors <http://seedstack.org>
+/*
+ * Copyright © 2013-2017, The SeedStack authors <http://seedstack.org>
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
+
 package org.seedstack.shed.misc;
 
-import javax.annotation.Priority;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.ToIntFunction;
+import javax.annotation.Priority;
 
 public final class PriorityUtils {
     private PriorityUtils() {
@@ -28,8 +29,10 @@ public final class PriorityUtils {
     }
 
     /**
-     * Sort classes by <strong>descending</strong> order of their priority, meaning the class with the higher priority will
-     * be the first element of the sorted list. The priority is determined according to the provided priority extractor.
+     * Sort classes by <strong>descending</strong> order of their priority, meaning the class with
+     * the higher priority will
+     * be the first element of the sorted list. The priority is determined according to the
+     * provided priority extractor.
      *
      * @param someClasses       the list of classes to sort.
      * @param priorityExtractor a function that extract a priority from an item.
@@ -39,7 +42,8 @@ public final class PriorityUtils {
     }
 
     /**
-     * Retrieves the priority of a class by using the value of the {@link Priority} annotation present on the class or on
+     * Retrieves the priority of a class by using the value of the {@link Priority} annotation
+     * present on the class or on
      * its superclasses. If no annotation is found, the returned priority is 0.
      *
      * @param someClass the class to extract priority from.
