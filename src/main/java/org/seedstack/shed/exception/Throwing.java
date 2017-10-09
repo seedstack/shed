@@ -30,7 +30,6 @@ public final class Throwing {
             } catch (Throwable throwable) {
                 Throwing.throwException(throwable);
             }
-            throw new IllegalStateException("Error in throwing consumer");
         }
     }
 
@@ -46,7 +45,6 @@ public final class Throwing {
             } catch (Throwable throwable) {
                 Throwing.throwException(throwable);
             }
-            throw new IllegalStateException("Error in throwing bi-consumer");
         }
     }
 
