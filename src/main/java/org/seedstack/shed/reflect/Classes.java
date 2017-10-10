@@ -66,7 +66,7 @@ public final class Classes {
                     return defaultConstructor.newInstance();
                 } catch (Exception e) {
                     throw ShedException.wrap(e, ShedErrorCode.UNABLE_TO_INSTANTIATE_CLASS)
-                            .put("class", someClass.getName());
+                            .put("class", someClass);
                 }
             }
         }
