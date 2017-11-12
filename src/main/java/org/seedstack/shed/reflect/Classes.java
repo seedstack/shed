@@ -8,7 +8,6 @@
 
 package org.seedstack.shed.reflect;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -18,12 +17,18 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
-import org.seedstack.shed.cache.LRUCache;
+import org.seedstack.shed.cache.Cache;
+import org.seedstack.shed.cache.CacheParameters;
 import org.seedstack.shed.internal.ShedErrorCode;
 import org.seedstack.shed.internal.ShedException;
 
 public final class Classes {
-    private static LRUCache<Context, List<Class<?>>> classesCache = new LRUCache<>(1024);
+    private static Cache<Context, List<Class<?>>> cache = Cache.create(
+            new CacheParameters<Context, List<Class<?>>>()
+                    .setInitialSize(256)
+                    .setMaxSize(1024)
+                    .setLoadingFunction(Context::gather)
+    );
 
     private Classes() {
         // no instantiation allowed
@@ -109,15 +114,8 @@ public final class Classes {
          *
          * @return a stream of class objects.
          */
-        @SuppressFBWarnings(value = "RV_RETURN_VALUE_OF_PUTIFABSENT_IGNORED", justification = "using "
-                + "putIfAbsent for concurrency")
         public Stream<Class<?>> classes() {
-            List<Class<?>> classes = classesCache.get(context);
-            if (classes == null) {
-                classesCache.putIfAbsent(context,
-                        classes = gather(context.getStartingClass(), new ArrayList<>(32)));
-            }
-            return classes.stream();
+            return cache.get(context).stream();
         }
 
         /**
@@ -184,22 +182,6 @@ public final class Classes {
                     .filter(field -> field.getName().equals(name))
                     .findFirst();
         }
-
-        private List<Class<?>> gather(Class<?> someClass, List<Class<?>> list) {
-            list.add(someClass);
-            if (context.isIncludeInterfaces()) {
-                for (Class<?> anInterface : someClass.getInterfaces()) {
-                    gather(anInterface, list);
-                }
-            }
-            if (context.isIncludeClasses()) {
-                Class<?> superclass = someClass.getSuperclass();
-                if (superclass != null && superclass != Object.class) {
-                    gather(superclass, list);
-                }
-            }
-            return list;
-        }
     }
 
     public static class FromClass extends End {
@@ -228,24 +210,33 @@ public final class Classes {
             this.startingClass = startingClass;
         }
 
-        Class<?> getStartingClass() {
-            return startingClass;
-        }
-
-        boolean isIncludeInterfaces() {
-            return includeInterfaces;
-        }
-
         void setIncludeInterfaces(boolean includeInterfaces) {
             this.includeInterfaces = includeInterfaces;
         }
 
-        boolean isIncludeClasses() {
-            return includeClasses;
-        }
-
         void setIncludeClasses(boolean includeClasses) {
             this.includeClasses = includeClasses;
+        }
+
+        List<Class<?>> gather() {
+            List<Class<?>> classes = new ArrayList<>(32);
+            gather(startingClass, classes);
+            return classes;
+        }
+
+        private void gather(Class<?> someClass, List<Class<?>> list) {
+            list.add(someClass);
+            if (includeInterfaces) {
+                for (Class<?> anInterface : someClass.getInterfaces()) {
+                    gather(anInterface, list);
+                }
+            }
+            if (includeClasses) {
+                Class<?> superclass = someClass.getSuperclass();
+                if (superclass != null && superclass != Object.class) {
+                    gather(superclass, list);
+                }
+            }
         }
 
         @Override

@@ -8,7 +8,6 @@
 
 package org.seedstack.shed.reflect;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Constructor;
@@ -19,11 +18,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
-import org.seedstack.shed.cache.LRUCache;
+import org.seedstack.shed.cache.Cache;
+import org.seedstack.shed.cache.CacheParameters;
 
 public final class Annotations {
     private static final String JAVA_LANG = "java.lang";
-    private static LRUCache<Context, List<Annotation>> cache = new LRUCache<>(1024);
+    private static Cache<Context, List<Annotation>> cache = Cache.create(
+            new CacheParameters<Context, List<Annotation>>()
+                    .setInitialSize(256)
+                    .setMaxSize(1024)
+                    .setLoadingFunction(Context::gather)
+    );
 
     private Annotations() {
         // no instantiation allowed
@@ -78,99 +83,8 @@ public final class Annotations {
          *
          * @return a stream of annotation objects.
          */
-        @SuppressFBWarnings(value = "RV_RETURN_VALUE_OF_PUTIFABSENT_IGNORED", justification = "using "
-                + "putIfAbsent for concurrency")
         public Stream<Annotation> findAll() {
-            List<Annotation> annotations = cache.get(context);
-            if (annotations == null) {
-                cache.putIfAbsent(context, annotations = doFindAll(new ArrayList<>(32)));
-            }
-            return annotations.stream();
-        }
-
-        private List<Annotation> doFindAll(List<Annotation> list) {
-            AnnotatedElement startingAnnotatedElement = context.getAnnotatedElement();
-            List<AnnotatedElement> annotatedElements = new ArrayList<>();
-            annotatedElements.add(startingAnnotatedElement);
-
-            if (startingAnnotatedElement instanceof Field) {
-                if (context.isFallingBackOnClasses()) {
-                    annotatedElements.add(((Field) startingAnnotatedElement).getDeclaringClass());
-                }
-            } else if (startingAnnotatedElement instanceof Method) {
-                if (context.isFallingBackOnClasses()) {
-                    annotatedElements.add(((Method) startingAnnotatedElement).getDeclaringClass());
-                }
-                if (context.isTraversingOverriddenMembers()) {
-                    Classes.from(((Method) startingAnnotatedElement).getDeclaringClass())
-                            .traversingInterfaces()
-                            .traversingSuperclasses()
-                            .methods()
-                            .filter(ExecutablePredicates
-                                    .executableIsEquivalentTo(((Method) startingAnnotatedElement)))
-                            .forEach(method -> {
-                                annotatedElements.add(method);
-                                if (context.isFallingBackOnClasses()) {
-                                    annotatedElements.add(method.getDeclaringClass());
-                                }
-                            });
-                }
-            } else if (startingAnnotatedElement instanceof Constructor) {
-                if (context.isFallingBackOnClasses()) {
-                    annotatedElements.add(((Constructor) startingAnnotatedElement).getDeclaringClass());
-                }
-                if (context.isTraversingOverriddenMembers()) {
-                    Classes.from(((Constructor) startingAnnotatedElement).getDeclaringClass())
-                            .traversingSuperclasses()
-                            .constructors()
-                            .filter(ExecutablePredicates
-                                    .executableIsEquivalentTo(((Constructor) startingAnnotatedElement)))
-                            .forEach(constructor -> {
-                                annotatedElements.add(constructor);
-                                if (context.isFallingBackOnClasses()) {
-                                    annotatedElements.add(constructor.getDeclaringClass());
-                                }
-                            });
-                }
-            }
-
-            for (AnnotatedElement annotatedElement : annotatedElements) {
-                if (annotatedElement instanceof Class<?> && (context.isTraversingInterfaces() || context
-                        .isTraversingSuperclasses())) {
-                    Classes.FromClass from = Classes.from(((Class<?>) annotatedElement));
-                    if (context.isTraversingInterfaces()) {
-                        from.traversingInterfaces();
-                    }
-                    if (context.isTraversingSuperclasses()) {
-                        from.traversingSuperclasses();
-                    }
-                    from.classes().forEach(c -> findAnnotations(c, list));
-                } else {
-                    findAnnotations(annotatedElement, list);
-                }
-            }
-
-            return list;
-        }
-
-        private void findAnnotations(AnnotatedElement annotatedElement, List<Annotation> list) {
-            for (Annotation annotation : annotatedElement.getAnnotations()) {
-                if (!annotation.annotationType().getPackage().getName().startsWith(JAVA_LANG)) {
-                    list.add(annotation);
-                    if (context.isIncludingMetaAnnotations()) {
-                        findMetaAnnotations(annotation, list);
-                    }
-                }
-            }
-        }
-
-        private void findMetaAnnotations(Annotation from, List<Annotation> list) {
-            for (Annotation annotation : from.annotationType().getAnnotations()) {
-                if (!annotation.annotationType().getPackage().getName().startsWith(JAVA_LANG)) {
-                    list.add(annotation);
-                    findMetaAnnotations(annotation, list);
-                }
-            }
+            return cache.get(context).stream();
         }
     }
 
@@ -209,48 +123,112 @@ public final class Annotations {
             this.annotatedElement = annotatedElement;
         }
 
-        AnnotatedElement getAnnotatedElement() {
-            return annotatedElement;
-        }
-
-        boolean isTraversingInterfaces() {
-            return traversingInterfaces;
-        }
-
         void setTraversingInterfaces(boolean traversingInterfaces) {
             this.traversingInterfaces = traversingInterfaces;
-        }
-
-        boolean isTraversingSuperclasses() {
-            return traversingSuperclasses;
         }
 
         void setTraversingSuperclasses(boolean traversingSuperclasses) {
             this.traversingSuperclasses = traversingSuperclasses;
         }
 
-        boolean isTraversingOverriddenMembers() {
-            return traversingOverriddenMembers;
-        }
-
         void setTraversingOverriddenMembers(boolean traversingOverriddenMembers) {
             this.traversingOverriddenMembers = traversingOverriddenMembers;
-        }
-
-        boolean isFallingBackOnClasses() {
-            return fallingBackOnClasses;
         }
 
         void setFallingBackOnClasses(boolean fallingBackOnClasses) {
             this.fallingBackOnClasses = fallingBackOnClasses;
         }
 
-        boolean isIncludingMetaAnnotations() {
-            return includingMetaAnnotations;
-        }
-
         void setIncludingMetaAnnotations(boolean includingMetaAnnotations) {
             this.includingMetaAnnotations = includingMetaAnnotations;
+        }
+
+        List<Annotation> gather() {
+            List<Annotation> annotations = new ArrayList<>(32);
+            gather(annotations);
+            return annotations;
+        }
+
+        private void gather(List<Annotation> list) {
+            AnnotatedElement startingAnnotatedElement = annotatedElement;
+            List<AnnotatedElement> annotatedElements = new ArrayList<>();
+            annotatedElements.add(startingAnnotatedElement);
+
+            if (startingAnnotatedElement instanceof Field) {
+                if (fallingBackOnClasses) {
+                    annotatedElements.add(((Field) startingAnnotatedElement).getDeclaringClass());
+                }
+            } else if (startingAnnotatedElement instanceof Method) {
+                if (fallingBackOnClasses) {
+                    annotatedElements.add(((Method) startingAnnotatedElement).getDeclaringClass());
+                }
+                if (traversingOverriddenMembers) {
+                    Classes.from(((Method) startingAnnotatedElement).getDeclaringClass())
+                            .traversingInterfaces()
+                            .traversingSuperclasses()
+                            .methods()
+                            .filter(ExecutablePredicates
+                                    .executableIsEquivalentTo(((Method) startingAnnotatedElement)))
+                            .forEach(method -> {
+                                annotatedElements.add(method);
+                                if (fallingBackOnClasses) {
+                                    annotatedElements.add(method.getDeclaringClass());
+                                }
+                            });
+                }
+            } else if (startingAnnotatedElement instanceof Constructor) {
+                if (fallingBackOnClasses) {
+                    annotatedElements.add(((Constructor) startingAnnotatedElement).getDeclaringClass());
+                }
+                if (traversingOverriddenMembers) {
+                    Classes.from(((Constructor) startingAnnotatedElement).getDeclaringClass())
+                            .traversingSuperclasses()
+                            .constructors()
+                            .filter(ExecutablePredicates
+                                    .executableIsEquivalentTo(((Constructor) startingAnnotatedElement)))
+                            .forEach(constructor -> {
+                                annotatedElements.add(constructor);
+                                if (fallingBackOnClasses) {
+                                    annotatedElements.add(constructor.getDeclaringClass());
+                                }
+                            });
+                }
+            }
+
+            for (AnnotatedElement annotatedElement : annotatedElements) {
+                if (annotatedElement instanceof Class<?> && (traversingInterfaces || traversingSuperclasses)) {
+                    Classes.FromClass from = Classes.from(((Class<?>) annotatedElement));
+                    if (traversingInterfaces) {
+                        from.traversingInterfaces();
+                    }
+                    if (traversingSuperclasses) {
+                        from.traversingSuperclasses();
+                    }
+                    from.classes().forEach(c -> findAnnotations(c, list));
+                } else {
+                    findAnnotations(annotatedElement, list);
+                }
+            }
+        }
+
+        private void findAnnotations(AnnotatedElement annotatedElement, List<Annotation> list) {
+            for (Annotation annotation : annotatedElement.getAnnotations()) {
+                if (!annotation.annotationType().getPackage().getName().startsWith(JAVA_LANG)) {
+                    list.add(annotation);
+                    if (includingMetaAnnotations) {
+                        findMetaAnnotations(annotation, list);
+                    }
+                }
+            }
+        }
+
+        private void findMetaAnnotations(Annotation from, List<Annotation> list) {
+            for (Annotation annotation : from.annotationType().getAnnotations()) {
+                if (!annotation.annotationType().getPackage().getName().startsWith(JAVA_LANG)) {
+                    list.add(annotation);
+                    findMetaAnnotations(annotation, list);
+                }
+            }
         }
 
         @Override

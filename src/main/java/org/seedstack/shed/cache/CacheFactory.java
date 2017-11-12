@@ -6,12 +6,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-package org.seedstack.shed;
+package org.seedstack.shed.cache;
 
-import org.seedstack.seed.core.Seed;
-
-public class Benchmarks {
-    public static void main(String[] args) throws Exception {
-        Seed.getLauncher().launch(new String[0]);
-    }
+public interface CacheFactory {
+    <K, V> Cache<K, V> createCache(CacheParameters<K, V> cacheParameters);
 }
