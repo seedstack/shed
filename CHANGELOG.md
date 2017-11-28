@@ -1,3 +1,10 @@
+# Version 1.1.1 (2017-11-28)
+
+* [new] Add simple caching API.
+* [new] Helpers for throwing consumers, suppliers, functions and bi-function.
+* [chg] Better error info on instantiateDefault.  
+* [fix] Fix bad throw in some throwing classes.
+
 # Version 1.1.0 (2017-07-31)
 
 * [new] Add no-dependency LRU cache.
