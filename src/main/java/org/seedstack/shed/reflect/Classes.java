@@ -93,15 +93,15 @@ public final class Classes {
     }
 
     /**
-     * Cast the specified class to a class parameterized with any generic type.
+     * Cast the specified object to an object of the specified type.
      *
-     * @param someClass the class to cast.
-     * @param <T>       the type to cast to.
-     * @return the casted class.
+     * @param object the object to cast.
+     * @param <T>    the type to cast to.
+     * @return the casted object.
      */
     @SuppressWarnings("unchecked")
-    public static <T extends Class<?>> T cast(Class<?> someClass) {
-        return (T) someClass;
+    public static <T> T cast(Object object) {
+        return (T) object;
     }
 
     /**
