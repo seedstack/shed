@@ -1,3 +1,7 @@
+# Version 1.1.2 (2017-11-28)
+
+* [chg] Java 9 compatibility
+
 # Version 1.1.1 (2017-11-28)
 
 * [new] Add simple caching API.

@@ -87,7 +87,7 @@ public final class Classes {
     public static <T> Optional<Class<T>> optional(String dependency) {
         try {
             return Optional.of((Class<T>) Class.forName(dependency));
-        } catch (ClassNotFoundException e) {
+        } catch (ClassNotFoundException | NoClassDefFoundError e) {
             return Optional.empty();
         }
     }
