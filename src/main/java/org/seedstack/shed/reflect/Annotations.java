@@ -72,10 +72,29 @@ public final class Annotations {
             return this;
         }
 
+        /**
+         * Return the first annotation of the specified class.
+         *
+         * @param annotationClass the class of the annotation to return.
+         * @param <T>             the annotation type.
+         * @return the optionally found annotation.
+         */
         @SuppressWarnings("unchecked")
         public <T extends Annotation> Optional<T> find(Class<T> annotationClass) {
             return (Optional<T>) findAll().filter(AnnotationPredicates.annotationIsOfClass(annotationClass))
                     .findFirst();
+        }
+
+        /**
+         * Returns a stream of all the annotations found.
+         *
+         * @return a stream of annotation objects.
+         */
+        @SuppressWarnings("unchecked")
+        public <T extends Annotation> Stream<T> findAll(Class<T> annotationClass) {
+            return (Stream<T>) cache.get(context)
+                    .stream()
+                    .filter(AnnotationPredicates.annotationIsOfClass(annotationClass));
         }
 
         /**
@@ -216,17 +235,8 @@ public final class Annotations {
                 if (!annotation.annotationType().getPackage().getName().startsWith(JAVA_LANG)) {
                     list.add(annotation);
                     if (includingMetaAnnotations) {
-                        findMetaAnnotations(annotation, list);
+                        findAnnotations(annotation.annotationType(), list);
                     }
-                }
-            }
-        }
-
-        private void findMetaAnnotations(Annotation from, List<Annotation> list) {
-            for (Annotation annotation : from.annotationType().getAnnotations()) {
-                if (!annotation.annotationType().getPackage().getName().startsWith(JAVA_LANG)) {
-                    list.add(annotation);
-                    findMetaAnnotations(annotation, list);
                 }
             }
         }
