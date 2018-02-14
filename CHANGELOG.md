@@ -1,4 +1,4 @@
-# Version 1.1.2 (2018-01-30)
+# Version 1.1.2 (2018-02-14)
 
 * [chg] Java 9 compatibility.
 * [fix] Also catch `NoClassDefFoundException` on `Classes.optional()`.
