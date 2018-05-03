@@ -1,3 +1,7 @@
+# Version 1.1.3 (2018-05-03)
+
+* [fix] Fix infinite recursion when scanning Kotlin annotations.
+
 # Version 1.1.2 (2018-02-14)
 
 * [chg] Java 9 compatibility.

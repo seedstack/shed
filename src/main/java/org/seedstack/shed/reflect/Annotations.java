@@ -23,6 +23,7 @@ import org.seedstack.shed.cache.CacheParameters;
 
 public final class Annotations {
     private static final String JAVA_LANG = "java.lang";
+    private static final String KOTLIN_ANNOTATION = "kotlin.annotation";
     private static Cache<Context, List<Annotation>> cache = Cache.create(
             new CacheParameters<Context, List<Annotation>>()
                     .setInitialSize(256)
@@ -232,10 +233,14 @@ public final class Annotations {
 
         private void findAnnotations(AnnotatedElement annotatedElement, List<Annotation> list) {
             for (Annotation annotation : annotatedElement.getAnnotations()) {
-                if (!annotation.annotationType().getPackage().getName().startsWith(JAVA_LANG)) {
+                Class<? extends Annotation> annotationType = annotation.annotationType();
+                String annotationPackageName = annotationType.getPackage().getName();
+                if (!annotationPackageName.startsWith(JAVA_LANG)
+                        && !annotationPackageName.startsWith(KOTLIN_ANNOTATION)
+                        && !annotationType.equals(annotatedElement)) {
                     list.add(annotation);
                     if (includingMetaAnnotations) {
-                        findAnnotations(annotation.annotationType(), list);
+                        findAnnotations(annotationType, list);
                     }
                 }
             }
