@@ -1,3 +1,7 @@
+# Version 1.1.4 (2018-11-29)
+
+* [chg] Built and tested with OpenJDK 11 (target is still 1.8).
+
 # Version 1.1.3 (2018-05-03)
 
 * [fix] Fix infinite recursion when scanning Kotlin annotations.
