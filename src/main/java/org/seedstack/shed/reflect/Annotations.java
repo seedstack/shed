@@ -8,6 +8,8 @@
 
 package org.seedstack.shed.reflect;
 
+import static org.seedstack.shed.reflect.ExecutablePredicates.executableIsEquivalentTo;
+
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Constructor;
@@ -170,54 +172,57 @@ public final class Annotations {
         }
 
         private void gather(List<Annotation> list) {
-            AnnotatedElement startingAnnotatedElement = annotatedElement;
             List<AnnotatedElement> annotatedElements = new ArrayList<>();
-            annotatedElements.add(startingAnnotatedElement);
 
-            if (startingAnnotatedElement instanceof Field) {
+            if (annotatedElement instanceof Field) {
+                annotatedElements.add(annotatedElement);
                 if (fallingBackOnClasses) {
-                    annotatedElements.add(((Field) startingAnnotatedElement).getDeclaringClass());
+                    annotatedElements.add(((Field) annotatedElement).getDeclaringClass());
                 }
-            } else if (startingAnnotatedElement instanceof Method) {
-                if (fallingBackOnClasses) {
-                    annotatedElements.add(((Method) startingAnnotatedElement).getDeclaringClass());
-                }
+            } else if (annotatedElement instanceof Method) {
                 if (traversingOverriddenMembers) {
-                    Classes.from(((Method) startingAnnotatedElement).getDeclaringClass())
+                    Classes.from(((Method) annotatedElement).getDeclaringClass())
                             .traversingInterfaces()
                             .traversingSuperclasses()
                             .methods()
-                            .filter(ExecutablePredicates
-                                    .executableIsEquivalentTo(((Method) startingAnnotatedElement)))
+                            .filter(executableIsEquivalentTo(((Method) annotatedElement)))
                             .forEach(method -> {
                                 annotatedElements.add(method);
                                 if (fallingBackOnClasses) {
                                     annotatedElements.add(method.getDeclaringClass());
                                 }
                             });
+                } else {
+                    annotatedElements.add(annotatedElement);
+                    if (fallingBackOnClasses) {
+                        annotatedElements.add(((Method) annotatedElement).getDeclaringClass());
+                    }
                 }
-            } else if (startingAnnotatedElement instanceof Constructor) {
-                if (fallingBackOnClasses) {
-                    annotatedElements.add(((Constructor) startingAnnotatedElement).getDeclaringClass());
-                }
+            } else if (annotatedElement instanceof Constructor) {
                 if (traversingOverriddenMembers) {
-                    Classes.from(((Constructor) startingAnnotatedElement).getDeclaringClass())
+                    Classes.from(((Constructor) annotatedElement).getDeclaringClass())
                             .traversingSuperclasses()
                             .constructors()
-                            .filter(ExecutablePredicates
-                                    .executableIsEquivalentTo(((Constructor) startingAnnotatedElement)))
+                            .filter(executableIsEquivalentTo(((Constructor) annotatedElement)))
                             .forEach(constructor -> {
                                 annotatedElements.add(constructor);
                                 if (fallingBackOnClasses) {
                                     annotatedElements.add(constructor.getDeclaringClass());
                                 }
                             });
+                } else {
+                    annotatedElements.add(annotatedElement);
+                    if (fallingBackOnClasses) {
+                        annotatedElements.add(((Constructor) annotatedElement).getDeclaringClass());
+                    }
                 }
+            } else {
+                annotatedElements.add(annotatedElement);
             }
 
-            for (AnnotatedElement annotatedElement : annotatedElements) {
-                if (annotatedElement instanceof Class<?> && (traversingInterfaces || traversingSuperclasses)) {
-                    Classes.FromClass from = Classes.from(((Class<?>) annotatedElement));
+            for (AnnotatedElement ae : annotatedElements) {
+                if (ae instanceof Class<?> && (traversingInterfaces || traversingSuperclasses)) {
+                    Classes.FromClass from = Classes.from(((Class<?>) ae));
                     if (traversingInterfaces) {
                         from.traversingInterfaces();
                     }
@@ -226,18 +231,18 @@ public final class Annotations {
                     }
                     from.classes().forEach(c -> findAnnotations(c, list));
                 } else {
-                    findAnnotations(annotatedElement, list);
+                    findAnnotations(ae, list);
                 }
             }
         }
 
-        private void findAnnotations(AnnotatedElement annotatedElement, List<Annotation> list) {
-            for (Annotation annotation : annotatedElement.getAnnotations()) {
+        private void findAnnotations(AnnotatedElement ae, List<Annotation> list) {
+            for (Annotation annotation : ae.getAnnotations()) {
                 Class<? extends Annotation> annotationType = annotation.annotationType();
                 String annotationPackageName = annotationType.getPackage().getName();
                 if (!annotationPackageName.startsWith(JAVA_LANG)
                         && !annotationPackageName.startsWith(KOTLIN_ANNOTATION)
-                        && !annotationType.equals(annotatedElement)) {
+                        && !annotationType.equals(ae)) {
                     list.add(annotation);
                     if (includingMetaAnnotations) {
                         findAnnotations(annotationType, list);

@@ -148,7 +148,10 @@ public final class Classes {
          * @return a stream of constructor objects.
          */
         public Stream<Constructor<?>> constructors() {
-            return classes().map(Class::getDeclaredConstructors).flatMap(Arrays::stream);
+            return classes()
+                    .map(Class::getDeclaredConstructors)
+                    .flatMap(Arrays::stream)
+                    .filter(c -> !c.isSynthetic());
         }
 
         /**
@@ -169,11 +172,14 @@ public final class Classes {
          * @return a stream of method objects.
          */
         public Stream<Method> methods() {
-            return classes().map(Class::getDeclaredMethods).flatMap(Arrays::stream);
+            return classes()
+                    .map(Class::getDeclaredMethods)
+                    .flatMap(Arrays::stream)
+                    .filter(m -> !m.isSynthetic());
         }
 
         /**
-         * Returns the first method of the specified name and parameter types found if any.
+         * Returns the first method of the specified name and parameter types found if any (ignoring return types).
          *
          * @param name           the name of the method.
          * @param parameterTypes the method parameter types.
@@ -181,8 +187,24 @@ public final class Classes {
          */
         public Optional<Method> method(String name, Class<?>... parameterTypes) {
             return methods()
-                    .filter(method -> method.getName().equals(name) && Arrays
-                            .equals(method.getParameterTypes(), parameterTypes))
+                    .filter(method -> method.getName().equals(name)
+                            && Arrays.equals(method.getParameterTypes(), parameterTypes))
+                    .findFirst();
+        }
+
+        /**
+         * Returns the first method of the specified name, return type and parameter types found if any.
+         *
+         * @param name           the name of the method.
+         * @param returnType     the method return type.
+         * @param parameterTypes the method parameter types.
+         * @return an optional containing the method if found.
+         */
+        public Optional<Method> method(String name, Class<?> returnType, Class<?>... parameterTypes) {
+            return methods()
+                    .filter(method -> method.getName().equals(name)
+                            && returnType.equals(method.getReturnType())
+                            && Arrays.equals(method.getParameterTypes(), parameterTypes))
                     .findFirst();
         }
 

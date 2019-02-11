@@ -1,3 +1,8 @@
+# Version 1.1.5 (2018-12-03)
+
+* [fix] Avoid duplicates when searching for annotations under certain conditions.  
+* [chg] Avoid returning synthetic methods and constructors in reflection operations.  
+
 # Version 1.1.4 (2018-12-03)
 
 * [chg] Built and tested with OpenJDK 11 (minimum Java version still being 8).
