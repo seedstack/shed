@@ -5,17 +5,21 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
+
 package org.seedstack.shed.reflect;
 
-import org.junit.Test;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-import java.lang.annotation.*;
+import java.lang.annotation.Annotation;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import org.junit.Test;
 
 public class AnnotationsTest {
     @Test
@@ -83,7 +87,7 @@ public class AnnotationsTest {
     }
 
     private void checkAnnotatedByBaseClass(Class<?> classToCheck, Class<? extends Annotation> annotationClass,
-                                           boolean meta) throws NoSuchFieldException, NoSuchMethodException {
+            boolean meta) throws NoSuchFieldException, NoSuchMethodException {
         assertThat(on(classToCheck, false, meta).find(annotationClass)).isNotPresent();
         assertThat(on(classToCheck, false, meta).traversingSuperclasses().find(annotationClass)).isPresent();
         assertThat(on(classToCheck, false, meta).traversingInterfaces().find(annotationClass)).isNotPresent();
@@ -127,7 +131,7 @@ public class AnnotationsTest {
     }
 
     private void checkAnnotatedByInterface(Class<?> classToCheck, Class<? extends Annotation> annotationClass,
-                                           boolean meta) throws NoSuchFieldException, NoSuchMethodException {
+            boolean meta) throws NoSuchFieldException, NoSuchMethodException {
         assertThat(on(classToCheck, false, meta).find(annotationClass)).isNotPresent();
         assertThat(on(classToCheck, false, meta).traversingSuperclasses().find(annotationClass)).isNotPresent();
         assertThat(on(classToCheck, false, meta).traversingInterfaces().find(annotationClass)).isPresent();
@@ -232,6 +236,19 @@ public class AnnotationsTest {
 
     }
 
+    @Test
+    public void classFallbackExcludesSubclasses() throws Exception {
+        Method notAnnotatedMethod = AnnotatedSubClass.class.getMethod("notAnnotatedMethod");
+        assertThat(Annotations.on(notAnnotatedMethod).find(TypeAnnotation.class)).isNotPresent();
+        assertThat(Annotations.on(notAnnotatedMethod).fallingBackOnClasses().find(TypeAnnotation.class)).isNotPresent();
+        assertThat(Annotations.on(notAnnotatedMethod).fallingBackOnClasses().traversingInterfaces().find
+                (TypeAnnotation.class)).isNotPresent();
+        assertThat(Annotations.on(notAnnotatedMethod).traversingOverriddenMembers().find(TypeAnnotation.class))
+                .isNotPresent();
+        assertThat(Annotations.on(notAnnotatedMethod).traversingOverriddenMembers().fallingBackOnClasses().find
+                (TypeAnnotation.class)).isNotPresent();
+    }
+
     private Annotations.OnClass on(AnnotatedElement annotatedElement, boolean fallback, boolean meta) {
         Annotations.OnAnnotatedElement withAnnotatedElement = Annotations.on(annotatedElement);
         Annotations.OnClass OnClass = fallback ? withAnnotatedElement.fallingBackOnClasses() : withAnnotatedElement;
@@ -318,7 +335,7 @@ public class AnnotationsTest {
         NotAnnotatedClass(Integer dummy) {
         }
 
-        void notAnnotatedMethod() {
+        public void notAnnotatedMethod() {
         }
 
         @MethodAnnotation
@@ -406,5 +423,9 @@ public class AnnotationsTest {
         @Override
         public void metaAnnotatedMethod() {
         }
+    }
+
+    @TypeAnnotation
+    private static class AnnotatedSubClass extends NotAnnotatedClass {
     }
 }
