@@ -1,3 +1,7 @@
+# Version 1.1.6 (2019-??-??)
+
+* [new] Add an executor implementing a simple retrying strategy after exception. 
+
 # Version 1.1.5 (2018-12-03)
 
 * [fix] Avoid duplicates when searching for annotations under certain conditions.  
