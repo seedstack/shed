@@ -16,6 +16,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Simple {@link Executor} that executes the command continuously in a loop and implements a delayed retry logic
+ * when the command throws an exception.
+ */
 public class RetryingExecutor implements Executor {
     private static final Logger LOGGER = LoggerFactory.getLogger(RetryingExecutor.class);
     private static final int DEFAULT_RETRY_DELAY = 10000;
@@ -26,33 +30,61 @@ public class RetryingExecutor implements Executor {
     private volatile Thread thread;
     private volatile Runnable command;
 
+    /**
+     * Creates a {@link RetryingExecutor} with default parameters.
+     */
     public RetryingExecutor() {
         this.name = "retry";
     }
 
+    /**
+     * Creates a {@link RetryingExecutor} with the specified name but otherwise default parameters.
+     *
+     * @param name the name of the executor (used for naming the executing thread).
+     */
     public RetryingExecutor(String name) {
         this.name = name;
     }
 
+    /**
+     * Creates a {@link RetryingExecutor} with the specified name and the the specified retry delay.
+     *
+     * @param name       the name of the executor (used for naming the executing thread).
+     * @param retryDelay the delay to wait before attempting a retry.
+     */
     public RetryingExecutor(String name, Duration retryDelay) {
         this.name = name;
         this.retryDelay = retryDelay;
     }
 
+    /**
+     * @return the delay to wait before attempting a retry.
+     */
     public Duration getRetryDelay() {
         return retryDelay;
     }
 
+    /**
+     * Sets the delay to wai before attempting a retry.
+     *
+     * @param retryDelay the retry delay.
+     */
     public void setRetryDelay(Duration retryDelay) {
         this.retryDelay = retryDelay;
     }
 
+    /**
+     * Starts the thread executing the command continuously.
+     */
     public synchronized void start() {
         if (!active.getAndSet(true)) {
             startThread();
         }
     }
 
+    /**
+     * Stops the thread executing the command continuously, interrupting it if necessary.
+     */
     public synchronized void stop() {
         if (active.getAndSet(false)) {
             timer.cancel();
@@ -60,6 +92,11 @@ public class RetryingExecutor implements Executor {
         }
     }
 
+    /**
+     * Executes the specified command continuously if the executor is started.
+     *
+     * @param command the command to execute.
+     */
     public synchronized void execute(Runnable command) {
         if (active.get()) {
             stop();
