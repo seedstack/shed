@@ -65,7 +65,7 @@ public class RetryingExecutor implements Executor {
     }
 
     /**
-     * Sets the delay to wai before attempting a retry.
+     * Sets the delay to way before attempting a retry.
      *
      * @param retryDelay the retry delay.
      */

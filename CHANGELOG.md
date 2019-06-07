@@ -1,6 +1,9 @@
 # Version 1.1.6 (2019-??-??)
 
 * [new] Add an executor implementing a simple retrying strategy after exception. 
+* [new] Adds the posiility to priorize a list of Objects by its class at `PriorityUtils`
+* [chg] Updated caffeine to 2.7.0 from 2.6.0
+* [chg] Updated parent-internal to 3.4.6 from 3.4.4
 
 # Version 1.1.5 (2018-12-03)
 
