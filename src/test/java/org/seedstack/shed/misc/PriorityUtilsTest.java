@@ -50,4 +50,19 @@ public class PriorityUtilsTest {
     Assertions.assertThat(classes)
         .containsExactly(Priority10.class, NoPriority.class, Negative10Priority.class);
   }
+
+  @Test
+  public void testSortByClassPriority() throws Exception {
+
+    Priority10 p10 = new Priority10();
+    Negative10Priority pMinus10 = new Negative10Priority();
+    NoPriority pNone = new NoPriority();
+
+    List<Object> objects = Lists.list(p10, pMinus10, pNone);
+
+    Assertions.assertThat(objects).containsExactly(p10, pMinus10, pNone);
+
+    PriorityUtils.sortByClassPriority(objects);
+    Assertions.assertThat(objects).containsExactly(p10, pNone, pMinus10);
+  }
 }

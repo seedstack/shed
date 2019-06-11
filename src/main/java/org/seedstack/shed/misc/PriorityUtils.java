@@ -11,6 +11,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.ToIntFunction;
+
 import javax.annotation.Priority;
 
 public final class PriorityUtils {
@@ -18,9 +19,10 @@ public final class PriorityUtils {
         // no instantiation allowed
     }
 
-    /**
-     * A specialisation of {@link #sortByPriority(List, ToIntFunction)} for a list of classes.
-     *
+    
+    /***
+     * A specialization of {@link #sortByPriority(List, ToIntFunction)} for a list of classes.
+     * @param <T> Class definition type
      * @param someClasses the list of classes to sort.
      */
     public static <T extends Class<?>> void sortByPriority(List<T> someClasses) {
@@ -33,12 +35,25 @@ public final class PriorityUtils {
      * be the first element of the sorted list. The priority is determined according to the
      * provided priority extractor.
      *
+     * @param <T> Ensure type consistency
      * @param someClasses       the list of classes to sort.
      * @param priorityExtractor a function that extract a priority from an item.
      */
     public static <T> void sortByPriority(List<T> someClasses, ToIntFunction<T> priorityExtractor) {
         someClasses.sort(Collections.reverseOrder(Comparator.comparingInt(priorityExtractor)));
     }
+    
+    
+    /**
+     * A specialization of {@link #sortByPriority(List, ToIntFunction)} for a list of objects.
+     *
+     * @param <T> Ensure type consistency
+     * @param someObjects the list of objects to sort.
+     */
+    public static <T extends Object> void sortByClassPriority(List<T> someObjects) {
+      sortByPriority(someObjects, PriorityUtils::priorityOfClassOf);
+    }
+
 
     /**
      * Retrieves the priority of a class by using the value of the {@link Priority} annotation
