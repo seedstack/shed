@@ -1,4 +1,4 @@
-# Version 1.1.6 (2019-??-??)
+# Version 1.1.6 (2019-06-11)
 
 * [new] Add an executor implementing a simple retrying strategy after exception. 
 * [new] Adds the posiility to priorize a list of Objects by its class at `PriorityUtils`
